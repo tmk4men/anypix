@@ -2,8 +2,7 @@
 
 最終更新日 / Last updated: 2026-07-19
 
-> 提供者名・連絡先は公開前に必ずご記入ください（`[提供者名]` `[連絡先メールアドレス]`）。
-> 個人アカウント名等を公開したくない場合は、専用の連絡先メールアドレスの利用を推奨します。
+提供者 / Provider: AnyPix ／ 連絡先 / Contact: tomokiskriiiabc@gmail.com
 
 ---
 
@@ -43,7 +42,7 @@
 提供者は本規約を随時変更できます。変更後に本アプリを継続して利用した場合、変更後の規約に同意したものとみなされます。
 
 ### 10. お問い合わせ
-[提供者名] / [連絡先メールアドレス]
+AnyPix / tomokiskriiiabc@gmail.com
 
 ---
 
@@ -83,4 +82,4 @@ These Terms are governed by the laws of Japan. Any dispute shall be subject to t
 The provider may amend these Terms from time to time. Continued use of the App after changes constitutes acceptance of the amended Terms.
 
 ### 10. Contact
-[Provider name] / [contact email]
+AnyPix / tomokiskriiiabc@gmail.com
