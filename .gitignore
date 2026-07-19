@@ -24,5 +24,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# App Store Connect API secrets (never commit)
+*.p8
+.asc.json
+.asc/
+asc.config.local.json
+
 # misc
 *.tmp

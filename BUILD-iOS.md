@@ -29,6 +29,10 @@ npm run ios:open            # Xcode で開く
 4. 上部のデバイス選択を **Any iOS Device (arm64)** に
 5. メニュー **Product → Archive** → 完了後 **Distribute App → App Store Connect → Upload**
 
+> **暗号化（輸出コンプライアンス）の質問は自動回避済み**：`ios:setup` が `Info.plist` に
+> `ITSAppUsesNonExemptEncryption = NO` を追加します（AnyPix は非対象の暗号化を使わないため）。
+> 手動で入れ直したいときは `npm run ios:noencrypt`。これでアップロード毎の質問が出ません。
+
 ## 3. App Store Connect
 1. **My Apps → +（新規App）**：プラットフォーム iOS、名前 `AnyPix`、Bundle ID を選択、SKU 任意
 2. **スクリーンショット（6.5インチ）**：`store/screenshots/` の画像をアップロード
@@ -40,6 +44,34 @@ npm run ios:open            # Xcode で開く
    - 参照名 `AnyPix Pro`、**製品ID `anypix_pro`**（コードの `PRODUCT_ID` と一致）、価格 **¥300 の Tier**
    - 審査用スクショ・説明を添付
 5. 情報（説明・キーワード・サポートURL・利用規約）を入力し、**審査に提出**
+
+---
+
+## （オプション）App Store Connect をコマンドで自動化
+掲載文（説明・キーワード・サブタイトル・カテゴリ・審査メモ）と**買い切り課金 `anypix_pro`（¥300）**は、
+同梱の CLI（`scripts/asc/`・Node標準のみ）で流し込めます。手クリックを減らせます。
+
+**初回のみ（Appleアカウント単位で1回）**：App Store Connect →「ユーザーとアクセス → Integrations → App Store Connect API」で
+チーム用キーを作成し、`~/.asc/config.json` を用意（`~` は Mac のホーム）：
+```json
+{ "keyId": "XXXXXXXXXX", "issuerId": "....", "keyPath": "AuthKey_XXXXXXXXXX.p8" }
+```
+`.p8` は `~/.asc/` に置く（**リポジトリには絶対に入れない**。`.gitignore` 済み）。
+※ 姿勢アプリ等、同じアカウントで既に鍵を作っていれば**それをそのまま使える**（アプリ横断で共有）。
+
+**AnyPix 用の値**は `asc.config.json`（このフォルダ直下）に記入済み。公開後に埋める箇所：
+- `appId`（`node scripts/asc/asc.mjs apps` で確認）
+- `urls.baseUrl`（PRIVACY/TERMS を公開したページ元）／`urls.contactEmail`（審査連絡先）
+
+```bash
+node scripts/asc/asc.mjs apps                         # appId 確認
+node scripts/asc/setup-iap.mjs ./asc.config.json      # 課金：ドライラン（作成しない）
+node scripts/asc/setup-iap.mjs ./asc.config.json --yes   # 課金 anypix_pro を作成
+node scripts/asc/setup-metadata.mjs ./asc.config.json --yes  # 掲載文を反映
+```
+> スクショ画像のアップロードは API でも可能だが、まずは App Store Connect 画面での添付が確実
+> （`store/screenshots/` の ja/en/ko × 4）。英語/韓国語の掲載文が必要なら
+> `asc.config.json` を `locale` 違いで複製して `setup-metadata.mjs` を各回実行。
 
 ---
 
