@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# Capacitor / native build artifacts (added when packaging for iOS/Android)
+ios/App/Pods/
+ios/App/build/
+android/.gradle/
+android/build/
+android/app/build/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# misc
+*.tmp

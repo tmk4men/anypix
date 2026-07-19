@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>AnyPix - 画像変換・圧縮コンバータ</title>
+<style>
+  /* ドット絵フォント（ローカル同梱・オフライン動作） */
+  @font-face{ font-family:'DotGothic16'; font-style:normal; font-weight:400; font-display:swap;
+    src:url('lib/fonts/latin-400-normal.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face{ font-family:'DotGothic16'; font-style:normal; font-weight:400; font-display:swap;
+    src:url('lib/fonts/japanese-400-normal.woff2') format('woff2');
+    unicode-range:U+2010-2027,U+25A0-26FF,U+3000-303F,U+3040-30FF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FF00-FFEF; }
+
+  :root{
+    --bg:#f5f2ec; --panel:#fffdf9; --panel-2:#f6f1e8; --text:#4b473f; --muted:#9a9186;
+    --border:#ece3d6; --accent:#7e93d4; --accent-2:#6b81c8; --ok:#5aa96b; --danger:#e08078;
+    --forge:#e0803a; --forge-2:#cf6d28;
+    --frame:#b79574; --frameSh:rgba(120,86,48,.32);
+    --shadow:0 10px 30px rgba(92,80,66,.10);
+    --pixel:'DotGothic16',"Segoe UI",-apple-system,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1c1b22; --panel:#26242e; --panel-2:#2d2b36; --text:#e9e4dc; --muted:#a69e93;
+      --border:#38343f; --accent:#9aa8ea; --accent-2:#b0bbef; --ok:#7fce8c; --danger:#f0938b;
+      --forge:#e8923f; --forge-2:#f0a256;
+      --frame:#4d3d2c; --frameSh:rgba(0,0,0,.55);
+      --shadow:0 12px 34px rgba(0,0,0,.40);
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--pixel);
+    background:var(--bg); color:var(--text); line-height:1.7; padding:24px 16px 60px;
+    -webkit-font-smoothing:none; font-smooth:never;
+  }
+  svg.ic{width:1em; height:1em; display:inline-block; vertical-align:-0.14em; flex:none; stroke-width:2}
+  .wrap{max-width:860px; margin:0 auto}
+  header{text-align:center; margin-bottom:24px}
+  header h1{font-size:1.9rem; margin:0 0 4px; letter-spacing:.04em; color:var(--forge);
+    text-shadow:3px 3px 0 var(--frameSh), 0 0 1px var(--forge)}
+  header .tagline{font-size:.86rem; font-weight:400; color:var(--accent); margin-bottom:6px}
+  header p{margin:0; color:var(--muted); font-size:.8rem; line-height:1.6}
+
+  .card{position:relative; background:var(--panel); border:3px solid var(--frame); border-radius:14px;
+    box-shadow:6px 6px 0 var(--frameSh); padding:26px 20px 20px; margin-bottom:20px; overflow:hidden}
+  /* カード上部の木目の帯 */
+  .card::before{content:""; position:absolute; top:0; left:0; right:0; height:10px;
+    background:
+      repeating-linear-gradient(90deg, rgba(60,40,20,.28) 0, rgba(60,40,20,.28) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 5px),
+      repeating-linear-gradient(90deg, rgba(255,240,220,.14) 0, rgba(255,240,220,.14) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px),
+      linear-gradient(90deg, #a9713f, #c78a4e 30%, #b07a44 55%, #cd935a 80%, #a9713f);
+    border-bottom:1px solid rgba(60,40,20,.35)}
+  @media (prefers-color-scheme: dark){
+    .card::before{background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.4) 0, rgba(0,0,0,.4) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 5px),
+      repeating-linear-gradient(90deg, rgba(255,210,160,.1) 0, rgba(255,210,160,.1) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px),
+      linear-gradient(90deg, #6b4a28, #855f38 30%, #714f2e 55%, #8a6440 80%, #6b4a28);
+      border-bottom:1px solid rgba(0,0,0,.45)} }
+
+  #drop{
+    border:3px dashed var(--frame); border-radius:12px; padding:40px 18px; text-align:center;
+    cursor:pointer; transition:.12s ease; background:var(--panel-2);
+  }
+  #drop:hover{border-color:var(--accent); background:var(--panel)}
+  #drop.over{border-color:var(--accent); background:var(--panel)}
+  #drop.over{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+  #drop:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+  #drop .ico{line-height:1}
+  #drop .ico svg{width:2.6rem; height:2.6rem; color:var(--accent)}
+  #drop b{color:var(--accent)}
+  #drop small{display:block; color:var(--muted); margin-top:8px; font-size:.76rem; line-height:1.5}
+
+  .controls{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:560px){.controls{grid-template-columns:1fr}}
+  label.fld{display:block; font-size:.78rem; color:var(--muted); margin-bottom:6px}
+  select,input[type=number]{
+    width:100%; padding:12px 14px; border-radius:10px; border:2px solid var(--frame);
+    background:var(--panel-2); color:var(--text); font-size:.92rem; font-family:var(--pixel);
+    min-height:46px;
+  }
+  .row{display:flex; align-items:center; gap:10px}
+  input[type=range]{flex:1; accent-color:var(--forge); height:22px}
+  input[type=range]:disabled{cursor:not-allowed; pointer-events:none; accent-color:var(--muted)}
+  /* 圧縮率を選べない形式（PNG）では画質欄ごと無効表示 */
+  #qfield.off{opacity:.42; filter:grayscale(.5)}
+  #qfield.off *{cursor:not-allowed}
+  /* Pro 案内 */
+  .pro-note{margin-top:8px; font-size:.72rem; color:var(--forge); background:color-mix(in srgb,var(--forge) 12%,var(--panel-2));
+    border:2px solid var(--forge); border-radius:8px; padding:6px 10px; display:inline-block}
+  .pro-note b{color:var(--forge)}
+  /* Pro バー（購入／復元） */
+  .pro-bar{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin:6px 0 4px}
+  .pro-status{font-size:.8rem; color:var(--muted)}
+  .pro-status.pro{color:var(--forge); font-weight:700}
+  .pro-bar.is-pro #btnBuyPro{display:none}
+  /* トースト（Pro訴求など） */
+  #toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(12px);
+    background:#241a12; color:#ffdca6; border:2px solid var(--forge); border-radius:10px;
+    padding:11px 16px; font-size:.8rem; font-family:var(--pixel); z-index:60; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s; box-shadow:4px 4px 0 rgba(0,0,0,.4); max-width:88vw; text-align:center}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  /* Pro 訴求モーダル */
+  #proModal{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center;
+    background:rgba(28,22,16,.72); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:20px}
+  #proModal[hidden]{display:none}
+  .modal-card{background:var(--panel); border:3px solid var(--frame); border-radius:16px; padding:24px 22px;
+    max-width:360px; width:100%; text-align:center; box-shadow:8px 8px 0 var(--frameSh); animation:pop .18s steps(3)}
+  .modal-badge{width:54px; height:54px; border-radius:12px; background:var(--forge); color:#fff;
+    display:grid; place-items:center; margin:0 auto 12px; box-shadow:3px 3px 0 var(--frameSh)}
+  .modal-badge svg{width:30px; height:30px}
+  .modal-card h2{margin:0 0 8px; font-size:1.12rem; color:var(--forge)}
+  .pm-body{font-size:.82rem; color:var(--muted); margin-bottom:14px; line-height:1.6}
+  .pm-list{list-style:none; padding:0; margin:0 auto 18px; text-align:left; display:inline-block}
+  .pm-list li{font-size:.84rem; margin:8px 0; display:flex; align-items:center; gap:9px}
+  .pm-list li svg{width:1.15em; height:1.15em; color:var(--ok); flex:none}
+  .pm-close{width:100%; margin-top:10px}
+  #pmBuy{margin-top:0}
+  .qval{min-width:104px; text-align:right; font-size:.78rem; font-variant-numeric:tabular-nums; color:var(--muted)}
+  .hint{font-size:.72rem; color:var(--muted); margin-top:6px; line-height:1.5}
+
+  /* ゲーム風ボタン（押し込める） */
+  button{font:inherit; font-family:var(--pixel); cursor:pointer; border:none; transition:transform .05s, box-shadow .05s}
+  .btn-ghost{background:var(--panel-2); color:var(--text); border:2px solid var(--frame); border-radius:9px;
+    font-size:.8rem; padding:9px 13px; min-height:40px; box-shadow:0 3px 0 var(--frameSh)}
+  .btn-ghost:hover:not(:disabled){border-color:var(--accent)}
+  .btn-ghost:active:not(:disabled){transform:translateY(3px); box-shadow:none}
+  .btn-ghost:disabled{opacity:.4; cursor:not-allowed; box-shadow:none}
+
+  /* 工程ヘッダー（①②③）＝ピクセルメダル */
+  .step-head{display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap}
+  .step-badge{width:34px; height:34px; border-radius:7px; background:var(--forge); color:#fff;
+    border:2px solid rgba(255,255,255,.55); display:grid; place-items:center; font-size:1.1rem; flex:none;
+    box-shadow:3px 3px 0 var(--frameSh)}
+  .step-head .t{font-size:1.05rem; line-height:1.2}
+  .step-head .s{font-size:.72rem; color:var(--muted); margin-top:2px}
+  .head-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+
+  /* 変換＝ハンマーを打つ（炉オレンジの必殺技ボタン） */
+  .btn-convert{width:100%; margin-top:20px; background:var(--forge); color:#fff;
+    border:3px solid var(--frame); border-radius:12px; padding:16px; font-size:1.15rem; letter-spacing:.06em;
+    min-height:56px; box-shadow:0 6px 0 var(--forge-2), 0 6px 0 3px var(--frameSh)}
+  .btn-convert:hover:not(:disabled){background:var(--forge-2)}
+  .btn-convert:active:not(:disabled){transform:translateY(6px); box-shadow:0 0 0 3px var(--frameSh)}
+  .btn-convert:disabled{opacity:.45; cursor:not-allowed; box-shadow:none}
+
+  #list{list-style:none; padding:0; margin:14px 0 0}
+  .item{display:flex; align-items:center; gap:14px; padding:12px; border:2px solid var(--frame);
+    border-radius:11px; margin-bottom:10px; background:var(--panel-2); box-shadow:0 3px 0 var(--frameSh)}
+  .item .thumb{width:50px; height:50px; border-radius:6px; object-fit:cover; background:#0001; flex:none;
+    border:2px solid var(--frame); image-rendering:auto}
+  .item .meta{flex:1; min-width:0}
+  .item .name{font-size:.86rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .item .sub{font-size:.72rem; color:var(--muted)}
+  .item .sub .arrow{color:var(--ok); font-weight:700}
+  .item .st{font-size:.72rem; color:var(--muted); flex:none}
+  .item .dl{background:var(--accent); color:#fff; padding:9px 14px; border-radius:8px; font-size:.76rem;
+    text-decoration:none; flex:none; border:2px solid var(--frame); box-shadow:0 3px 0 var(--frameSh)}
+  .item .dl:hover{background:var(--accent-2)}
+  .item .dl:active{transform:translateY(3px); box-shadow:none}
+  .item .rm{background:transparent; color:var(--muted); border:none; font-size:1.3rem; padding:2px 8px; flex:none}
+  .empty{color:var(--muted); text-align:center; padding:8px; font-size:.84rem}
+  .delta{font-weight:700}
+  .delta.down{color:var(--ok)} .delta.up{color:var(--danger)}
+  .summary{background:var(--panel-2); border:2px solid var(--frame); border-radius:11px;
+    padding:13px 16px; margin-bottom:12px; font-size:.82rem; display:flex; flex-wrap:wrap; gap:6px 18px;
+    box-shadow:0 3px 0 var(--frameSh)}
+  .summary b{color:var(--forge)}
+  footer{text-align:center; color:var(--muted); font-size:.72rem; margin-top:10px; line-height:1.6}
+
+  /* CRT風スキャンライン（全面・うっすら） */
+  body::after{content:""; position:fixed; inset:0; z-index:40; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0, rgba(0,0,0,.05) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px);
+    mix-blend-mode:multiply}
+  @media (prefers-color-scheme: dark){ body::after{background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0, rgba(0,0,0,.16) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px); mix-blend-mode:normal} }
+
+  /* 工房っぽい背景（暖色の焚き火グロー＋細かなドットのテクスチャ） */
+  /* 工房風：木の板張りの壁＋炉のグロー */
+  body{
+    background-color:#e4d5bd;
+    background-image:
+      /* 炉のグロー（下） */
+      radial-gradient(130% 90% at 50% 112%, rgba(255,140,45,.20), rgba(255,140,45,0) 58%),
+      /* 板の継ぎ目（横のライン） */
+      repeating-linear-gradient(0deg, rgba(92,62,34,0) 0, rgba(92,62,34,0) 52px,
+        rgba(92,62,34,.28) 52px, rgba(92,62,34,.28) 54px),
+      /* 木目（縦の細い縞） */
+      repeating-linear-gradient(90deg, rgba(150,112,68,.10) 0, rgba(150,112,68,.10) 2px,
+        rgba(120,85,48,.03) 2px, rgba(120,85,48,.03) 9px),
+      /* 板ごとの色ムラ＋下地 */
+      linear-gradient(180deg, #ecdec6, #ddccb0);
+    background-attachment:fixed;
+  }
+  @media (prefers-color-scheme: dark){
+    body{
+      background-color:#241a12;
+      background-image:
+        radial-gradient(130% 90% at 50% 112%, rgba(255,120,30,.26), rgba(255,120,30,0) 58%),
+        repeating-linear-gradient(0deg, rgba(10,6,3,0) 0, rgba(10,6,3,0) 52px,
+          rgba(10,6,3,.5) 52px, rgba(10,6,3,.5) 54px),
+        repeating-linear-gradient(90deg, rgba(70,48,28,.35) 0, rgba(70,48,28,.35) 2px,
+          rgba(40,26,14,.2) 2px, rgba(40,26,14,.2) 9px),
+        linear-gradient(180deg, #2c2014, #1f1710);
+      background-attachment:fixed;
+    }
+  }
+
+  /* 加工中オーバーレイ（ドット絵アニメ） */
+  #overlay{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    background:rgba(28,22,16,.62); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px)}
+  #overlay[hidden]{display:none}
+  .forge-box{background:#241a12; border:4px solid #3c2c1c; border-radius:12px; padding:16px;
+    box-shadow:8px 8px 0 rgba(0,0,0,.5); text-align:center; animation:pop .18s steps(3)}
+  @keyframes pop{from{transform:scale(.85); opacity:0} to{transform:scale(1); opacity:1}}
+  #forge{width:340px; max-width:78vw; height:auto; display:block; image-rendering:pixelated;
+    border-radius:6px; background:#1a120c}
+  .forge-cap{margin-top:12px; color:#ffdca6; font-size:.9rem; letter-spacing:.05em;
+    font-family:var(--pixel); font-variant-numeric:tabular-nums}
+  .forge-sub{margin-top:6px; color:#e8b06a; font-size:.72rem; font-family:var(--pixel); opacity:.9}
+
+  /* ===== レスポンシブ（スマホ最適化）===== */
+  @media (max-width:600px){
+    body{padding:14px 10px 40px}
+    .wrap{max-width:100%}
+    header{margin-bottom:18px}
+    header h1{font-size:1.55rem}
+    header p{font-size:.76rem}
+    .card{padding:22px 14px 16px; border-width:2px; box-shadow:4px 4px 0 var(--frameSh); margin-bottom:14px}
+    .step-head{gap:10px; margin-bottom:14px}
+    .step-badge{width:30px; height:30px; font-size:1rem}
+    .step-head .t{font-size:1rem}
+    .head-actions{width:100%; margin-left:0; margin-top:6px}
+    .head-actions .btn-ghost{flex:1 1 auto; text-align:center; min-height:44px}
+    .btn-convert{min-height:58px; font-size:1.2rem}
+    select,input[type=number]{min-height:48px; font-size:1rem}
+    #drop{padding:30px 14px}
+    .btn-convert{padding:16px; font-size:1.08rem}
+    /* 結果行：狭い画面では2段に折り返す */
+    .item{flex-wrap:wrap; gap:10px 12px}
+    .item .meta{flex:1 1 calc(100% - 62px)}
+    .item .st{order:3; flex:1 1 auto; min-width:0; white-space:normal}
+    .item .dl{order:4}
+    .item .rm{order:5; margin-left:auto}
+  }
+  @media (max-width:380px){
+    .item .thumb{width:42px; height:42px}
+    .item .meta{flex-basis:calc(100% - 54px)}
+    .qval{min-width:86px; font-size:.78rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg> AnyPix</h1>
+    <div class="tagline" data-i18n="tagline">画像変換・圧縮コンバータ</div>
+    <p data-i18n="intro">HEIC・JPG・PNG・WEBP・AVIF などを相互変換。すべて端末内で処理され、画像は外部に送信されません。</p>
+  </header>
+
+  <div class="card">
+    <div class="step-head">
+      <span class="step-badge">1</span>
+      <div><div class="t" data-i18n="s1_t">素材を持ち込む</div><div class="s" id="dropSub">変換したい画像を選ぶ</div></div>
+    </div>
+    <div id="drop" role="button" tabindex="0" aria-label="画像を選択、またはドラッグ＆ドロップ">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 18v-6"/><path d="M9.3 13.7 12 11l2.7 2.7"/></svg></div>
+      <div data-i18n-html="drop_main">ここに画像をドラッグ＆ドロップ、または <b>クリックして選択</b></div>
+      <small data-i18n="drop_formats">対応: HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF など（GIFは先頭フレーム）</small>
+    </div>
+    <input type="file" id="file" accept="image/*,.heic,.heif,.tif,.tiff,.avif" multiple hidden>
+  </div>
+
+  <div class="card">
+    <div class="step-head">
+      <span class="step-badge">2</span>
+      <div><div class="t" data-i18n="s2_t">仕上げを指定</div><div class="s" data-i18n="s2_s">出力する形式と画質を決める</div></div>
+    </div>
+    <div class="controls">
+      <div>
+        <label class="fld" for="fmt" data-i18n="fmt_label">変換先の形式</label>
+        <select id="fmt">
+          <option value="image/png">PNG（可逆・透過対応）</option>
+          <option value="image/jpeg">JPG・JPEG（写真向け・軽量）</option>
+          <option value="image/webp" selected>WEBP（高圧縮・透過対応）</option>
+          <option value="image/avif">AVIF（次世代・最高圧縮）</option>
+        </select>
+      </div>
+      <div id="qfield">
+        <label class="fld" for="quality" data-i18n="q_label">画質 / 圧縮率（100%=無劣化）</label>
+        <div class="row">
+          <input type="range" id="quality" min="40" max="100" step="10" value="100" list="qticks">
+          <span class="qval" id="qval">100% ・最高画質</span>
+        </div>
+        <datalist id="qticks">
+          <option value="40"></option><option value="50"></option><option value="60"></option>
+          <option value="70"></option><option value="80"></option><option value="90"></option>
+          <option value="100"></option>
+        </datalist>
+        <div class="hint" id="qhint"></div>
+        <div class="pro-note" id="proNote" hidden><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> <span data-i18n-html="proNote">圧縮は <b>AnyPix Pro</b> で解放（無料は100%のみ）</span></div>
+      </div>
+    </div>
+    <button class="btn-convert" id="convert" disabled><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 2.3a1 1 0 0 0-1.4 0l-3.9 3.9a1 1 0 0 0 0 1.4l.6.6-6.3 6.3a2 2 0 0 0 0 2.8l1.8 1.8a2 2 0 0 0 2.9 0l6.3-6.3.6.6a1 1 0 0 0 1.4 0l3.9-3.9a1 1 0 0 0 0-1.4z"/></svg> <span data-i18n="convert">変換する</span></button>
+  </div>
+
+  <div class="card">
+    <div class="step-head">
+      <span class="step-badge">3</span>
+      <div><div class="t" data-i18n="s3_t">仕上がり</div><div class="s" data-i18n="s3_s">変換した画像を保存する</div></div>
+      <div class="head-actions">
+        <button class="btn-ghost" id="dlall" data-i18n="saveAll" disabled>すべて保存</button>
+        <button class="btn-ghost" id="clear" data-i18n="clear" disabled>クリア</button>
+      </div>
+    </div>
+    <div id="summary" class="summary" hidden></div>
+    <ul id="list"><li class="empty" data-i18n="empty">まだ画像がありません</li></ul>
+  </div>
+
+  <div class="pro-bar">
+    <span id="proStatus" class="pro-status">無料版</span>
+    <button class="btn-ghost" id="btnBuyPro"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.1 6.1L20.5 10l-6.4 1.9L12 18l-2.1-6.1L3.5 10l6.4-1.9z"/></svg> <span data-i18n="buyPro">Proにする</span></button>
+    <button class="btn-ghost" id="btnRestore" data-i18n="restore">購入を復元</button>
+  </div>
+
+  <footer data-i18n="footer">画像はあなたのデバイス内だけで変換されます（オフラインでも動作）。</footer>
+</div>
+
+<div id="overlay" hidden aria-live="polite">
+  <div class="forge-box">
+    <canvas id="forge" width="140" height="116"></canvas>
+    <div class="forge-cap"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 2.3a1 1 0 0 0-1.4 0l-3.9 3.9a1 1 0 0 0 0 1.4l.6.6-6.3 6.3a2 2 0 0 0 0 2.8l1.8 1.8a2 2 0 0 0 2.9 0l6.3-6.3.6.6a1 1 0 0 0 1.4 0l3.9-3.9a1 1 0 0 0 0-1.4z"/></svg> <span data-i18n="forge_cap">加工中…</span> <span id="forgeProg"></span></div>
+    <div class="forge-sub" id="forgeSub" hidden><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg> <span data-i18n="forge_sub">Pro なら最短で仕上がります</span></div>
+  </div>
+</div>
+
+<div id="proModal" hidden>
+  <div class="modal-card">
+    <div class="modal-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.1 6.1L20.5 10l-6.4 1.9L12 18l-2.1-6.1L3.5 10l6.4-1.9z"/></svg></div>
+    <h2 id="pmTitle"></h2>
+    <div id="pmBody" class="pm-body"></div>
+    <ul id="pmList" class="pm-list"></ul>
+    <button class="btn-convert" id="pmBuy"></button>
+    <button class="btn-ghost pm-close" id="pmClose"></button>
+  </div>
+</div>
+
+<script src="lib/heic2any.min.js"></script>
+<script src="lib/pako.min.js"></script>
+<script src="lib/UTIF.js"></script>
+<script src="lib/UPNG.js"></script>
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+
+  // ===== 多言語（端末/ストア言語に追従：日本語以外は英語）=====
+  const I18N={
+    ja:{
+      title:'AnyPix - 画像変換・圧縮コンバータ', tagline:'画像変換・圧縮コンバータ',
+      intro:'HEIC・JPG・PNG・WEBP・AVIF などを相互変換。すべて端末内で処理され、画像は外部に送信されません。',
+      s1_t:'素材を持ち込む', s1_free:'変換したい画像を選ぶ（無料は1枚／Proで複数一括）', s1_pro:'変換したい画像を選ぶ（複数まとめてOK）',
+      drop_main:'ここに画像をドラッグ＆ドロップ、または <b>クリックして選択</b>',
+      drop_formats:'対応: HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF など（GIFは先頭フレーム）',
+      s2_t:'仕上げを指定', s2_s:'出力する形式と画質を決める', fmt_label:'変換先の形式',
+      opt_png:'PNG（可逆・透過対応）', opt_jpg:'JPG・JPEG（写真向け・軽量）', opt_webp:'WEBP（高圧縮・透過対応）', opt_avif:'AVIF（次世代・最高圧縮）',
+      q_label:'画質 / 圧縮率（100%=無劣化）', q_val:'{0}% ・{1}',
+      ql_high_comp:'高圧縮', ql_std:'標準', ql_high:'高画質', ql_max:'最高画質',
+      proNote:'圧縮は <b>AnyPix Pro</b> で解放（無料は100%のみ）',
+      convert:'変換する', s3_t:'仕上がり', s3_s:'変換した画像を保存する', saveAll:'すべて保存', clear:'クリア',
+      empty:'まだ画像がありません', save:'保存', forge_cap:'加工中…', forge_sub:'Pro なら最短で仕上がります',
+      pro_free:'無料版', pro_pro:'AnyPix Pro', pro_pending:'購入処理中…', buyPro:'Proにする', restore:'購入を復元',
+      footer:'画像はあなたのデバイス内だけで変換されます（オフラインでも動作）。',
+      toast_limit:'無料版は1回1枚まで。Proで一括変換できます', unsupported:'（このブラウザは非対応）',
+      buy_soon:'購入はアプリ版で対応予定です。', restore_soon:'購入の復元はアプリ版で対応予定です。',
+      restore_done:'購入を復元しました。', restore_none:'復元できる購入は見つかりませんでした。',
+      st_loading:'読み込み中…', st_wait:'待機中', st_converting:'変換中… ({0}/{1})', st_done:'完了',
+      st_err:'エラー: {0}', st_readerr:'読込エラー: {0}', st_changed:'設定変更 → 再変換してください',
+      err_notready:'画像の読み込みが未完了です', err_size:'画像サイズを取得できません', err_fmt:'この形式に変換できません',
+      err_pnggen:'PNG生成失敗', err_imgload:'画像を読み込めません', err_heiclib:'HEICライブラリ未読込',
+      err_tifflib:'TIFFライブラリ未読込', err_tiffparse:'TIFF解析失敗', err_tiffdraw:'TIFF描画失敗',
+      sum_count:'変換済み <b>{0}</b> 件', sum_total:'合計', sum_reduced:'−{0}% 削減', sum_increased:'+{0}% 増加',
+      upsell_title:'AnyPix Pro でもっと快適に', upsell_body:'Pro なら制限なく、もっと自由に。',
+      limit_title:'本日の無料変換は上限です', limit_body:'無料は1日{0}回まで。Proなら無制限で使えます。',
+      b_watermark:'透かしを削除', b_compress:'圧縮・画質を自由に調整', b_batch:'複数をまとめて一括変換',
+      b_fast:'最短スピードで変換', b_unlimited:'1日の回数制限なし', pm_close:'閉じる', price:'¥300'
+    },
+    en:{
+      title:'AnyPix - Image Converter & Compressor', tagline:'Image Converter & Compressor',
+      intro:'Convert between HEIC, JPG, PNG, WEBP, AVIF and more. Everything runs on your device — images are never uploaded.',
+      s1_t:'Add your images', s1_free:'Pick images to convert (free: 1 at a time / Pro: batch)', s1_pro:'Pick images to convert (batch supported)',
+      drop_main:'Drag & drop images here, or <b>click to select</b>',
+      drop_formats:'Supports HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF (GIF: first frame)',
+      s2_t:'Choose output', s2_s:'Set the format and quality', fmt_label:'Output format',
+      opt_png:'PNG (lossless · transparency)', opt_jpg:'JPG · JPEG (photos · light)', opt_webp:'WEBP (high compression · transparency)', opt_avif:'AVIF (next-gen · best compression)',
+      q_label:'Quality / Compression (100% = lossless)', q_val:'{0}% · {1}',
+      ql_high_comp:'High compression', ql_std:'Standard', ql_high:'High quality', ql_max:'Maximum',
+      proNote:'Compression is <b>AnyPix Pro</b> only (free is 100%)',
+      convert:'Convert', s3_t:'Result', s3_s:'Save your converted images', saveAll:'Save all', clear:'Clear',
+      empty:'No images yet', save:'Save', forge_cap:'Forging…', forge_sub:'Pro finishes in the shortest time',
+      pro_free:'Free', pro_pro:'AnyPix Pro', pro_pending:'Processing…', buyPro:'Get Pro', restore:'Restore purchase',
+      footer:'Images are converted only on your device (works offline).',
+      toast_limit:'Free is 1 image at a time. Get Pro for batch.', unsupported:' (not supported in this browser)',
+      buy_soon:'Purchases will be available in the app.', restore_soon:'Restore will be available in the app.',
+      restore_done:'Purchase restored.', restore_none:'No purchases to restore.',
+      st_loading:'Loading…', st_wait:'Ready', st_converting:'Converting… ({0}/{1})', st_done:'Done',
+      st_err:'Error: {0}', st_readerr:'Load error: {0}', st_changed:'Settings changed → convert again',
+      err_notready:'Image not loaded yet', err_size:'Cannot get image size', err_fmt:'Cannot convert to this format',
+      err_pnggen:'PNG generation failed', err_imgload:'Cannot load image', err_heiclib:'HEIC library not loaded',
+      err_tifflib:'TIFF library not loaded', err_tiffparse:'TIFF parse failed', err_tiffdraw:'TIFF draw failed',
+      sum_count:'<b>{0}</b> converted', sum_total:'Total', sum_reduced:'−{0}% smaller', sum_increased:'+{0}% larger',
+      upsell_title:'Do more with AnyPix Pro', upsell_body:'Go unlimited with Pro.',
+      limit_title:'Daily free limit reached', limit_body:'Free is {0} conversions/day. Pro is unlimited.',
+      b_watermark:'Remove watermark', b_compress:'Adjust compression & quality', b_batch:'Batch convert multiple images',
+      b_fast:'Fastest conversion', b_unlimited:'No daily limit', pm_close:'Close', price:'$1.99'
+    },
+    ko:{
+      title:'AnyPix - 이미지 변환·압축 컨버터', tagline:'이미지 변환·압축 컨버터',
+      intro:'HEIC·JPG·PNG·WEBP·AVIF 등을 상호 변환. 모든 처리는 기기 안에서 이루어지며 이미지는 외부로 전송되지 않습니다.',
+      s1_t:'이미지 가져오기', s1_free:'변환할 이미지 선택 (무료는 1장 / Pro는 여러 장)', s1_pro:'변환할 이미지 선택 (여러 장 한꺼번에 OK)',
+      drop_main:'여기에 이미지를 드래그 앤 드롭하거나 <b>클릭하여 선택</b>',
+      drop_formats:'지원: HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF 등 (GIF는 첫 프레임)',
+      s2_t:'출력 설정', s2_s:'출력 형식과 화질 선택', fmt_label:'변환할 형식',
+      opt_png:'PNG (무손실·투명 지원)', opt_jpg:'JPG·JPEG (사진용·경량)', opt_webp:'WEBP (고압축·투명 지원)', opt_avif:'AVIF (차세대·최고 압축)',
+      q_label:'화질 / 압축률 (100%=무손실)', q_val:'{0}% · {1}',
+      ql_high_comp:'고압축', ql_std:'표준', ql_high:'고화질', ql_max:'최고 화질',
+      proNote:'압축은 <b>AnyPix Pro</b>에서 해제 (무료는 100%만)',
+      convert:'변환하기', s3_t:'완성', s3_s:'변환한 이미지 저장', saveAll:'모두 저장', clear:'지우기',
+      empty:'아직 이미지가 없습니다', save:'저장', forge_cap:'가공 중…', forge_sub:'Pro는 가장 빠르게 완성됩니다',
+      pro_free:'무료 버전', pro_pro:'AnyPix Pro', pro_pending:'구매 처리 중…', buyPro:'Pro 구매', restore:'구매 복원',
+      footer:'이미지는 기기 안에서만 변환됩니다 (오프라인에서도 작동).',
+      toast_limit:'무료 버전은 한 번에 1장까지. Pro로 일괄 변환하세요.', unsupported:' (이 브라우저는 미지원)',
+      buy_soon:'구매는 앱 버전에서 지원 예정입니다.', restore_soon:'구매 복원은 앱 버전에서 지원 예정입니다.',
+      restore_done:'구매를 복원했습니다.', restore_none:'복원할 구매가 없습니다.',
+      st_loading:'불러오는 중…', st_wait:'대기 중', st_converting:'변환 중… ({0}/{1})', st_done:'완료',
+      st_err:'오류: {0}', st_readerr:'불러오기 오류: {0}', st_changed:'설정 변경 → 다시 변환하세요',
+      err_notready:'이미지가 아직 로드되지 않았습니다', err_size:'이미지 크기를 가져올 수 없습니다', err_fmt:'이 형식으로 변환할 수 없습니다',
+      err_pnggen:'PNG 생성 실패', err_imgload:'이미지를 불러올 수 없습니다', err_heiclib:'HEIC 라이브러리 미로드',
+      err_tifflib:'TIFF 라이브러리 미로드', err_tiffparse:'TIFF 분석 실패', err_tiffdraw:'TIFF 렌더링 실패',
+      sum_count:'<b>{0}</b>개 변환됨', sum_total:'합계', sum_reduced:'−{0}% 감소', sum_increased:'+{0}% 증가',
+      upsell_title:'AnyPix Pro로 더 편리하게', upsell_body:'Pro로 제한 없이 자유롭게.',
+      limit_title:'오늘의 무료 변환 한도 도달', limit_body:'무료는 하루 {0}회까지. Pro는 무제한입니다.',
+      b_watermark:'워터마크 제거', b_compress:'압축·화질 자유 조정', b_batch:'여러 장 일괄 변환',
+      b_fast:'가장 빠른 변환', b_unlimited:'하루 횟수 제한 없음', pm_close:'닫기', price:'₩3,000'
+    }
+  };
+  // 端末/ストア言語に追従。?lang=ja|en|ko で上書きも可（テスト用）。
+  const qLang=(location.search.match(/[?&]lang=(ja|en|ko)/)||[])[1];
+  const nav=(navigator.language||'en').toLowerCase();
+  const lang = qLang || (nav.startsWith('ja')?'ja':nav.startsWith('ko')?'ko':'en');
+  function t(k){ let s=(I18N[lang]&&I18N[lang][k]!=null)?I18N[lang][k]:(I18N.en[k]!=null?I18N.en[k]:k);
+    for(let i=1;i<arguments.length;i++) s=s.split('{'+(i-1)+'}').join(arguments[i]); return s; }
+  function applyI18n(){
+    document.documentElement.lang=lang;
+    document.title=t('title');
+    document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=t(el.getAttribute('data-i18n-html')); });
+    const setOpt=(v,k)=>{const o=fmtSel.querySelector('option[value="'+v+'"]'); if(o) o.textContent=t(k);};
+    setOpt('image/png','opt_png'); setOpt('image/jpeg','opt_jpg'); setOpt('image/webp','opt_webp'); setOpt('image/avif','opt_avif');
+    // 「Proにする」ボタンに価格を表示
+    const bp=document.querySelector('#btnBuyPro [data-i18n="buyPro"]');
+    if(bp) bp.textContent = t('buyPro')+' '+t('price');
+  }
+
+  const drop=$('#drop'), fileInput=$('#file'), listEl=$('#list');
+  const fmtSel=$('#fmt'), qSlider=$('#quality'), qVal=$('#qval'), qHint=$('#qhint'), qField=$('#qfield');
+  const proNote=$('#proNote'), proStatus=$('#proStatus'), btnBuyPro=$('#btnBuyPro'), btnRestore=$('#btnRestore');
+
+  /* ===================== 課金（IAP エンタイトルメント層） =====================
+     無料: 出力に透かし＋圧縮不可(画質100%固定)。Pro: 透かしなし＋圧縮解放。
+
+     【設計原則 — 2つの実障害への対策】
+     ① コールバックの遅延/タイムアウトで「購入したのに失敗扱い」になる
+        → 購入は"所有権(owned/レシート)"で最終判定。保留(pending)を永続化し、
+          起動時・アプリ復帰時・復元ボタンで再確認して救済する。
+     ② Apple ID入力を"キャンセル"したのにProが解放される（キャンセル→成功の誤判定）
+        → Proの解放は verifyEntitlement()（owned===true）でのみ行う。
+          purchase()の解決・コールバック・pending・キャンセルでは「絶対に解放しない」。
+     ネイティブ(Capacitor)側は window.AnyPixIAP.{purchase,owned} を実装するだけ。
+        owned() は必ず"検証済みの所有権"を返すこと（購入を試みた=trueにしない）。
+  ========================================================================= */
+  const PRO_KEY='anypix_pro', PENDING_KEY='anypix_pro_pending', PRODUCT_ID='anypix_pro';
+  let isPro = localStorage.getItem(PRO_KEY)==='1';
+  let pending = localStorage.getItem(PENDING_KEY)==='1';
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const withTimeout=(p,ms)=>Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('timeout'),{timeout:true})),ms))]);
+
+  // ネイティブIAP橋渡し（未接続時は owned=現状維持 / purchase=未接続エラー）
+  const Store={
+    linked(){ return !!(window.AnyPixIAP && window.AnyPixIAP.owned); },
+    async owned(){ try{ if(window.AnyPixIAP&&window.AnyPixIAP.owned) return !!(await window.AnyPixIAP.owned(PRODUCT_ID)); }catch(e){} return isPro; },
+    async purchase(){ if(window.AnyPixIAP&&window.AnyPixIAP.purchase) return window.AnyPixIAP.purchase(PRODUCT_ID); throw new Error('IAP未接続'); }
+  };
+
+  function setPending(v){ pending=!!v; v?localStorage.setItem(PENDING_KEY,'1'):localStorage.removeItem(PENDING_KEY); }
+  // Pro解放の唯一の入口（所有権が確定した時だけ）
+  function grantPro(){ if(isPro) return; isPro=true; localStorage.setItem(PRO_KEY,'1'); setPending(false); applyProState(); }
+  function revokePro(){ isPro=false; localStorage.setItem(PRO_KEY,'0'); applyProState(); }
+
+  // 所有権を照会して、trueなら解放。キャンセルや遅延では呼ばれても owned=false なので解放されない。
+  async function verifyEntitlement(){ if(await Store.owned()){ grantPro(); return true; } return false; }
+
+  // 購入：キャンセルでは解放せず、遅延では失敗確定にしない
+  async function purchasePro(){
+    if(isPro) return true;
+    if(!Store.linked()){ alert(t('buy_soon')); return false; }
+    setPending(true); applyProState();
+    try{
+      await withTimeout(Store.purchase(), 25000);
+    }catch(e){
+      if(e && (e.cancelled || /cancel/i.test(e.message||''))){
+        // ユーザーがキャンセル → 何があっても解放しない。保留も解除。
+        setPending(false); applyProState();
+        return false;
+      }
+      // タイムアウト/一時エラー → 失敗と断定しない（所有権で救済）
+    }
+    // 成否に関わらず"所有権"で最終判定（購入成立→コールバック遅延を救済）
+    if(await verifyEntitlement()) return true;
+    for(const w of [1500,3000,6000]){ await sleep(w); if(await verifyEntitlement()) return true; }
+    // 未確認なら pending のまま（次回起動/復帰/復元で再確認）
+    applyProState();
+    return isPro;
+  }
+
+  // 購入復元（Appleの要件。取りこぼし・機種変の救済にもなる）
+  async function restorePurchases(){
+    if(!Store.linked()){ alert(t('restore_soon')); return false; }
+    const ok=await verifyEntitlement();
+    alert(ok?t('restore_done'):t('restore_none'));
+    return ok;
+  }
+
+  // 起動時＆アプリ復帰時に所有権を再確認（保留や取りこぼしを解消／サーバ側失効も反映）
+  async function bootEntitlement(){
+    applyProState();
+    if(Store.linked() && (pending || true)) await verifyEntitlement();  // 接続時は毎回照会が安全
+    applyProState();
+  }
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && Store.linked() && (pending||!isPro)) verifyEntitlement(); });
+
+  btnBuyPro && btnBuyPro.addEventListener('click',()=>purchasePro());
+  btnRestore && btnRestore.addEventListener('click',()=>restorePurchases());
+
+  // テスト用（開発のみ）：ネイティブ購入を介さず状態を確認する。
+  // ※ これは"所有権"を経由しない開発フックであり、製品UIからは到達しない。
+  window.anypixSetPro = v=>{ v?grantPro():revokePro(); return isPro; };
+
+  function applyProState(){
+    proNote.hidden = isPro;
+    if(proStatus){ proStatus.textContent = isPro?t('pro_pro'):(pending?t('pro_pending'):t('pro_free')); proStatus.classList.toggle('pro',isPro); }
+    document.querySelector('.pro-bar') && document.querySelector('.pro-bar').classList.toggle('is-pro',isPro);
+    const ds=document.getElementById('dropSub');
+    if(ds) ds.textContent = isPro ? t('s1_pro') : t('s1_free');
+    if(!isPro && +qSlider.value!==100) qSlider.value=100;   // 無料は圧縮不可
+    syncQuality();
+    if(!busy) invalidateOutputs();    // 透かし/圧縮が変わるので再変換を促す
+  }
+  const btnConvert=$('#convert'), btnDlAll=$('#dlall'), btnClear=$('#clear');
+  const summaryEl=$('#summary');
+  const overlay=$('#overlay'), forgeProg=$('#forgeProg');
+
+  const EXT={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif'};
+  let items=[]; // {id,file,name,srcUrl,outUrl,outBlob,outName,status}
+  let idc=0;
+  let busy=false;          // 変換中フラグ（UIロック用）
+  let lastFmt=null;        // 直近に変換した形式（ZIP名などに使用）
+
+  const fmtBytes = n => n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
+
+  // 画質スライダー：10%刻みでカクッと動く。値＋段階ラベル表示。PNG時は無効化。
+  function qualityLabel(v){
+    if(v<=50) return t('ql_high_comp');
+    if(v<=70) return t('ql_std');
+    if(v<=90) return t('ql_high');
+    return t('ql_max');
+  }
+  function showQ(){ qVal.textContent=t('q_val', qSlider.value, qualityLabel(+qSlider.value)); }
+  qSlider.addEventListener('input',()=>{ if(!isPro){qSlider.value=100;} showQ(); });
+  function syncQuality(){
+    // 無料は圧縮不可（100%固定）。Pro/PNGとも可（100%=無劣化）。
+    const locked = busy || !isPro;
+    qSlider.disabled = locked;
+    qField.classList.toggle('off', locked);
+    qHint.textContent='';
+    showQ();
+  }
+  fmtSel.addEventListener('change',syncQuality);
+
+  // 形式・画質の変更 → 既存の変換結果を無効化して「再変換が必要」を通知
+  [fmtSel,qSlider].forEach(el=>el.addEventListener('change',()=>{ if(!busy) invalidateOutputs(); }));
+
+  function invalidateOutputs(){
+    let changed=false;
+    for(const it of items){
+      if(it.outUrl){URL.revokeObjectURL(it.outUrl); it.outUrl=it.outBlob=it.outName=null;
+        it.status=t('st_changed'); changed=true;}
+    }
+    if(changed) render();
+  }
+
+  // --- file intake ---
+  drop.addEventListener('click',()=>{ if(!busy) fileInput.click(); });
+  drop.addEventListener('keydown',e=>{
+    if((e.key==='Enter'||e.key===' ')&&!busy){e.preventDefault(); fileInput.click();}
+  });
+  drop.addEventListener('dragover',e=>{e.preventDefault();if(!busy)drop.classList.add('over')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{
+    e.preventDefault();drop.classList.remove('over');
+    if(!busy) addFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change',()=>{addFiles(fileInput.files);fileInput.value='';});
+
+  function isSupportedInput(f){
+    if(f.type.startsWith('image/')) return true;
+    // 拡張子で判定（HEIC等はMIMEが空のことがある）
+    return /\.(heic|heif|tif|tiff|png|jpe?g|webp|gif|bmp|ico|avif|svg)$/i.test(f.name);
+  }
+
+  const FREE_MAX=1; // 無料版は1回1枚まで（Proで一括変換）
+  async function addFiles(fileList){
+    let list=[...fileList].filter(isSupportedInput);
+    if(!isPro){
+      const room=Math.max(0, FREE_MAX-items.length);
+      if(list.length>room){ toast(t('toast_limit')); }
+      list=list.slice(0, room);
+    }
+    const added=[];
+    for(const f of list){
+      const it={id:++idc,file:f,name:f.name,srcUrl:null,srcBlob:null,
+        outUrl:null,outBlob:null,outName:null,status:t('st_loading')};
+      items.push(it); added.push(it);
+    }
+    render();
+    // HEIC/TIFF は <img> で直接表示できないので、表示用に PNG へデコード
+    for(const it of added){
+      try{
+        const blob=await decodeToDisplayBlob(it.file);
+        it.srcBlob=blob;
+        it.srcUrl=URL.createObjectURL(blob);
+        it.status=t('st_wait');
+      }catch(err){
+        it.status=t('st_readerr', err.message||err);
+      }
+      render();
+    }
+  }
+
+  // 表示・変換に使える Blob（PNG等）を返す。HEIC/TIFF はここでデコード。
+  async function decodeToDisplayBlob(file){
+    const name=(file.name||'').toLowerCase();
+    const isHeic=/\.(heic|heif)$/.test(name)||file.type==='image/heic'||file.type==='image/heif';
+    const isTiff=/\.(tif|tiff)$/.test(name)||file.type==='image/tiff';
+    if(isHeic){
+      if(typeof heic2any!=='function') throw new Error(t('err_heiclib'));
+      const out=await heic2any({blob:file,toType:'image/png'});
+      return Array.isArray(out)?out[0]:out;
+    }
+    if(isTiff){
+      if(typeof UTIF==='undefined') throw new Error(t('err_tifflib'));
+      const buf=await file.arrayBuffer();
+      const ifds=UTIF.decode(buf);
+      if(!ifds.length) throw new Error(t('err_tiffparse'));
+      UTIF.decodeImage(buf,ifds[0]);
+      const rgba=UTIF.toRGBA8(ifds[0]);
+      const w=ifds[0].width,h=ifds[0].height;
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      const ctx=cv.getContext('2d');
+      const imgData=ctx.createImageData(w,h);
+      imgData.data.set(rgba);
+      ctx.putImageData(imgData,0,0);
+      return await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error(t('err_tiffdraw'))),'image/png'));
+    }
+    return file; // ブラウザが直接読める形式はそのまま
+  }
+
+  function baseName(n){const i=n.lastIndexOf('.');return i>0?n.slice(0,i):n;}
+
+  // PNGの品質% → 使用色数（0=可逆・無劣化）。低いほど色を減らして圧縮。
+  function pngCnum(pct){
+    const map={100:0, 90:256, 80:128, 70:64, 60:32, 50:16, 40:8};
+    if(pct in map) return map[pct];
+    if(pct>=100) return 0;
+    return Math.max(8, Math.min(256, Math.round(256*pct/90)));
+  }
+
+  // 無料版の透かし（右下に控えめに）
+  function drawWatermark(ctx,w,h){
+    const fs=Math.max(11, Math.round(Math.min(w,h)*0.05));
+    const pad=Math.round(fs*0.6);
+    ctx.save();
+    ctx.font='700 '+fs+'px "Segoe UI",sans-serif';
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.lineWidth=Math.max(2, fs*0.16); ctx.lineJoin='round';
+    ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.strokeText('AnyPix', w-pad, h-pad); ctx.fillText('AnyPix', w-pad, h-pad);
+    ctx.restore();
+  }
+
+  // --- conversion ---
+  async function convertItem(it){
+    const type=fmtSel.value;
+    const q=Math.min(1,Math.max(0.1,(parseInt(qSlider.value)||92)/100));
+    try{
+      if(!it.srcUrl) throw new Error(t('err_notready'));
+      const img=await loadImage(it.srcUrl);
+      const w=img.naturalWidth, h=img.naturalHeight;
+      if(!w||!h) throw new Error(t('err_size'));
+
+      const cv=document.createElement('canvas');
+      cv.width=w; cv.height=h;
+      const ctx=cv.getContext('2d');
+      // JPEG/AVIFは透過非対応になり得る → 白背景で塗る
+      if(type==='image/jpeg'){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);}
+      ctx.drawImage(img,0,0,w,h);
+      if(!isPro) drawWatermark(ctx,w,h);   // 無料版は透かし
+
+      let blob;
+      if(type==='image/png'){
+        // PNGは toBlob が品質を無視するため、100%未満は減色（量子化）で圧縮
+        const pct=Math.round(q*100), cnum=pngCnum(pct);
+        const lossless=await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error(t('err_pnggen'))),'image/png'));
+        if(cnum>0 && typeof UPNG!=='undefined'){
+          const id=ctx.getImageData(0,0,w,h);
+          const quant=new Blob([UPNG.encode([id.data.buffer],w,h,cnum)],{type:'image/png'});
+          // 減色でかえって大きくなる画像は可逆版を採用（サイズが増えないよう保証）
+          blob=quant.size<lossless.size?quant:lossless;
+        }else{
+          blob=lossless;
+        }
+      }else{
+        blob=await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error(t('err_fmt'))),type,q));
+      }
+      if(it.outUrl) URL.revokeObjectURL(it.outUrl);
+      it.outBlob=blob;
+      it.outUrl=URL.createObjectURL(blob);
+      it.outName=baseName(it.name)+'.'+EXT[type];
+      it.outType=type; it.outW=w; it.outH=h;
+      it.status=t('st_done');
+    }catch(err){
+      it.status=t('st_err', err.message||err);
+    }
+  }
+
+  function loadImage(url){
+    return new Promise((res,rej)=>{
+      const img=new Image();
+      img.onload=()=>res(img);
+      img.onerror=()=>rej(new Error(t('err_imgload')));
+      img.src=url;
+    });
+  }
+
+  btnConvert.addEventListener('click',async()=>{
+    if(busy||!items.length) return;
+    if(freeReached()){ openProModal('limit'); return; }   // 無料は1日3回まで
+    busy=true; lastFmt=fmtSel.value; setLocked(true);
+    showForge();                        // 職人が加工中…のドット絵アニメ
+    const now=()=>(performance&&performance.now)?performance.now():Date.now();
+    const t0=now();
+    let n=0; const total=items.length;
+    for(const it of items){
+      n++;
+      forgeProg.textContent='('+n+'/'+total+')';
+      it.status=t('st_converting', n, total); render();
+      await convertItem(it); render();
+    }
+    // 加工アニメの最低表示時間：Proは最短、無料は職人がじっくり仕上げる（＝時間がかかる）
+    const base = isPro ? 900 : 3200;                 // 基本の待ち
+    const per  = isPro ? 150 : 1100;                 // 画像1枚あたりの追加
+    const minMs = Math.min(isPro?2500:12000, base + per*total);   // 上限あり
+    const el=now()-t0;
+    if(el<minMs) await new Promise(r=>setTimeout(r, minMs-el));
+    hideForge();
+    busy=false; setLocked(false); updateButtons();
+    // 無料版：回数を消費し、変換後にPro訴求モーダル
+    if(!isPro && items.some(i=>i.outBlob)){ bumpUsage(); openProModal('upsell'); }
+  });
+
+  // 変換中はファイル追加・削除・設定変更・保存を止める
+  function setLocked(on){
+    btnConvert.disabled=on; btnClear.disabled=on; btnDlAll.disabled=on;
+    fmtSel.disabled=on; syncQuality(); // スライダーの有効/無効は busy と Pro 状態で決める
+    drop.style.pointerEvents=on?'none':''; drop.style.opacity=on?.6:1;
+    document.querySelectorAll('.rm').forEach(b=>b.disabled=on);
+  }
+
+  btnDlAll.addEventListener('click',()=>{
+    items.filter(i=>i.outUrl).forEach((i,idx)=>setTimeout(()=>download(i),idx*150));
+  });
+
+  btnClear.addEventListener('click',()=>{
+    items.forEach(i=>{i.srcUrl&&URL.revokeObjectURL(i.srcUrl);i.outUrl&&URL.revokeObjectURL(i.outUrl);});
+    items=[]; render();
+  });
+
+  function download(it){
+    const a=document.createElement('a');
+    a.href=it.outUrl; a.download=it.outName; a.click();
+  }
+
+  // --- render ---
+  function render(){
+    if(!items.length){
+      listEl.innerHTML='<li class="empty">'+t('empty')+'</li>';
+      updateButtons(); return;
+    }
+    listEl.innerHTML='';
+    items.forEach(it=>{
+      const li=document.createElement('li'); li.className='item';
+      const done=!!it.outUrl;
+      let sizeInfo;
+      if(done){
+        const pct=Math.round((1-it.outBlob.size/it.file.size)*100);
+        const dcls=pct>0?'down':'up';
+        const dtxt=pct>0?`−${pct}%`:`+${Math.abs(pct)}%`;
+        sizeInfo=`${fmtBytes(it.file.size)} <span class="arrow">${ARROW}</span> ${it.outName} ・ `
+          +`${fmtBytes(it.outBlob.size)} <span class="delta ${dcls}">${dtxt}</span> ・ ${it.outW}×${it.outH}`;
+      } else sizeInfo=fmtBytes(it.file.size);
+      li.innerHTML=`
+        <img class="thumb" src="${it.srcUrl}" alt="">
+        <div class="meta">
+          <div class="name">${escapeHtml(it.name)}</div>
+          <div class="sub">${sizeInfo}</div>
+        </div>
+        <span class="st">${it.status}</span>
+        ${done?`<a class="dl" href="${it.outUrl}" download="${escapeHtml(it.outName)}">${t('save')}</a>`:''}
+        <button class="rm" title="削除"${busy?' disabled':''}>×</button>`;
+      li.querySelector('.rm').addEventListener('click',()=>{
+        if(busy) return;
+        it.srcUrl&&URL.revokeObjectURL(it.srcUrl); it.outUrl&&URL.revokeObjectURL(it.outUrl);
+        items=items.filter(x=>x!==it); render();
+      });
+      listEl.appendChild(li);
+    });
+    updateButtons();
+  }
+
+  function updateButtons(){
+    renderSummary();
+    if(busy) return; // 変換中は setLocked が制御するので触らない
+    const anyOut=items.some(i=>i.outUrl);
+    btnConvert.disabled=items.length===0;
+    btnClear.disabled=items.length===0;
+    btnDlAll.disabled=!anyOut;
+  }
+
+  function renderSummary(){
+    const done=items.filter(i=>i.outBlob);
+    if(!done.length){summaryEl.hidden=true; return;}
+    const inSum=done.reduce((s,i)=>s+i.file.size,0);
+    const outSum=done.reduce((s,i)=>s+i.outBlob.size,0);
+    const pct=Math.round((1-outSum/inSum)*100);
+    const dcls=pct>0?'down':'up';
+    const dtxt=pct>0?t('sum_reduced',pct):t('sum_increased',Math.abs(pct));
+    summaryEl.hidden=false;
+    summaryEl.innerHTML=`<span>${t('sum_count', done.length)}</span>`
+      +`<span>${t('sum_total')} ${fmtBytes(inSum)} <span class="arrow">${ARROW}</span> <b>${fmtBytes(outSum)}</b> `
+      +`<span class="delta ${dcls}">${dtxt}</span></span>`;
+  }
+
+  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  const ARROW='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h14"/><path d="M12 6l6 6-6 6"/></svg>';
+  let toastTimer=null;
+  function toast(msg){
+    let el=document.getElementById('toast');
+    if(!el){ el=document.createElement('div'); el.id='toast'; document.body.appendChild(el); }
+    el.textContent=msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+  }
+
+  // ===== 1日の無料変換回数（無料は3回/日）＋ Pro訴求モーダル =====
+  const FREE_DAILY=3;
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function getUsage(){ try{ const u=JSON.parse(localStorage.getItem('anypix_usage')||'{}'); return (u&&u.date===todayStr())?u:{date:todayStr(),count:0}; }catch(e){ return {date:todayStr(),count:0}; } }
+  function usedToday(){ return getUsage().count; }
+  function bumpUsage(){ const u=getUsage(); u.count++; localStorage.setItem('anypix_usage', JSON.stringify(u)); return u.count; }
+  function freeReached(){ return !isPro && usedToday()>=FREE_DAILY; }
+
+  const proModal=$('#proModal'), pmTitle=$('#pmTitle'), pmBody=$('#pmBody'), pmList=$('#pmList'), pmBuy=$('#pmBuy'), pmClose=$('#pmClose');
+  const CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+  function openProModal(mode){
+    if(isPro) return;
+    pmTitle.textContent = t(mode==='limit'?'limit_title':'upsell_title');
+    pmBody.textContent  = mode==='limit'? t('limit_body', FREE_DAILY) : t('upsell_body');
+    pmList.innerHTML = ['b_watermark','b_compress','b_batch','b_fast','b_unlimited']
+      .map(k=>'<li>'+CHK+'<span>'+t(k)+'</span></li>').join('');
+    pmBuy.textContent  = t('buyPro')+' '+t('price');
+    pmClose.textContent= t('pm_close');
+    proModal.hidden=false;
+  }
+  function closeProModal(){ proModal.hidden=true; }
+  pmBuy.addEventListener('click',()=>{ closeProModal(); purchasePro(); });
+  pmClose.addEventListener('click',closeProModal);
+  proModal.addEventListener('click',e=>{ if(e.target===proModal) closeProModal(); });
+
+  // --- 工房ドット絵アニメ（職人がハンマーで加工中）---
+  const forgeCv=$('#forge'), F=forgeCv.getContext('2d');
+  const C={ wall:'#2a1d12',wall2:'#22160d',beam:'#3a2718',beamHi:'#4a3320',
+    floor:'#3c2a1a',floorLn:'#2a1c10',
+    stone:'#4a3b2c',stoneD:'#33281c',glow1:'#ff7a1a',glow2:'#ffb03a',glow3:'#ffe07a',
+    anvil:'#4b4b55',anvilHi:'#74747f',anvilD:'#2f2f37',
+    skin:'#e0a878',skinD:'#c48858',skinHi:'#f0c193',
+    hair:'#cfc7b8',hairD:'#a79e8c',hairW:'#ece6da',
+    apron:'#6b4527',apronD:'#4a2f18',apronHi:'#845736',
+    shirt:'#9c6239',shirtD:'#7a4b29',
+    pants:'#3f3a4a',pantsD:'#2c2836',boot:'#241a12',bootHi:'#3d2c1c',
+    handle:'#9a6a34',handleD:'#6f4a22',
+    hHead:'#8a8a95',hHi:'#c2c2cc',hSh:'#5a5a64',
+    hot:'#ff8a1a',hotHi:'#ffe888',spark:'#fff3b0',sparkW:'#ffffff',sweat:'#bfe0ff',
+    eye:'#2e2115' };
+  function px(x,y,w,h,c){F.fillStyle=c;F.fillRect(x|0,y|0,w|0,h|0);}
+  function pxln(x0,y0,x1,y1,t,c){
+    const dx=x1-x0,dy=y1-y0,st=Math.max(Math.abs(dx),Math.abs(dy),1),o=t>>1;
+    for(let i=0;i<=st;i++){px(Math.round(x0+dx*i/st)-o,Math.round(y0+dy*i/st)-o,t,t,c);}
+  }
+  // ハンマー頭の軌道（振り上げ→振り下ろし→打撃）
+  const FR=[
+    {h:[84,64],s:2},{h:[74,52],s:1},{h:[62,40],s:0},{h:[52,28],s:0},{h:[46,18],s:0},
+    {h:[48,13],s:0},{h:[56,13],s:0},{h:[68,20],s:0},{h:[78,36],s:0},{h:[84,52],s:0}
+  ];
+  function drawForge(fi){
+    const fr=FR[fi%FR.length], strike=fr.s;
+    // 背景・梁
+    px(0,0,140,116,C.wall); px(8,0,9,116,C.beam); px(8,0,2,116,C.beamHi); px(64,0,6,100,C.wall2);
+    // 壁の道具（やっとこ）
+    px(120,10,2,16,C.hSh); px(118,24,6,3,C.hSh);
+    // 床
+    px(0,100,140,16,C.floor); px(0,100,140,1,C.floorLn);
+    px(30,100,1,16,C.floorLn); px(74,100,1,16,C.floorLn); px(112,100,1,16,C.floorLn);
+    // 炉（右）＋炎のゆらぎ
+    px(104,36,36,64,C.stone); px(110,46,26,44,C.stoneD);
+    const gl=[C.glow1,C.glow2,C.glow3][Math.floor(Math.random()*3)];
+    px(112,50,22,38,C.glow1); px(115,58,16,28,gl); px(119,66,8,16,C.glow3);
+    for(let i=0;i<4;i++){ if(Math.random()<.6) px(112+((Math.random()*22)|0),38+((Math.random()*10)|0),1,1,C.spark); }
+    // 金床（土台の影→本体）
+    px(66,97,34,3,C.floorLn);
+    px(60,71,8,4,C.anvil); px(57,72,4,2,C.anvil);              // 角（ホーン）
+    px(66,70,34,5,C.anvil); px(66,70,34,1,C.anvilHi);          // 上面
+    px(78,75,12,7,C.anvil); px(80,82,9,8,C.anvilD);            // 首
+    px(72,90,24,6,C.anvil); px(70,96,28,5,C.anvilD);           // 台座
+    // 加工中の熱い金属（打撃時に強く光る）
+    px(74,66,18,4,strike?C.hotHi:C.hot); px(73,65,20,1,C.glow3);
+
+    // ===== 職人（おじさん）===== ※打撃時は前傾（グループごと傾ける）
+    F.save(); if(strike) F.translate(2,1);
+    // 脚・ブーツ（がっしり）
+    px(27,82,24,18,C.pants); px(38,86,2,14,C.pantsD);
+    px(29,92,9,2,C.pantsD); px(41,92,9,2,C.pantsD);
+    px(25,100,14,9,C.boot); px(39,100,14,9,C.boot);
+    px(25,106,14,2,C.bootHi); px(39,106,14,2,C.bootHi);
+    // 革エプロン（スカート部・幅広）＋ポケット＋リベット
+    px(24,60,28,24,C.apron); px(24,60,4,24,C.apronD); px(49,60,3,24,C.apronHi);
+    px(31,69,15,1,C.apronD); px(31,69,1,9,C.apronD); px(45,69,1,9,C.apronD); px(31,77,15,1,C.apronD);
+    px(27,63,1,1,C.hHi); px(49,63,1,1,C.hHi);
+    // シャツ肩＋まくった袖（いかり肩でずんぐり）
+    px(21,48,32,7,C.shirt); px(21,54,32,1,C.shirtD);
+    // エプロン胸当て＋肩紐
+    px(30,50,17,12,C.apron); px(30,50,17,1,C.apronHi);
+    px(31,47,3,6,C.apronD); px(44,47,3,6,C.apronD);
+    px(32,52,1,1,C.hHi); px(45,52,1,1,C.hHi);
+    // 頭：白髪（後頭部・横）
+    px(28,30,4,16,C.hair); px(28,30,2,16,C.hairD); px(47,34,4,11,C.hair); px(28,29,5,3,C.hairW);
+    // 禿頭＋顔（肌）
+    px(32,24,15,4,C.skin); px(30,27,20,7,C.skin); px(30,34,20,11,C.skin);
+    px(32,31,16,1,C.skinD); px(33,29,13,1,C.skinD);   // 額のしわ
+    px(31,38,2,4,C.skinHi);                            // 頬ハイライト
+    // もじゃ眉（太く濃く・集中顔）
+    px(32,33,7,3,'#6f4a28'); px(41,33,7,3,'#6f4a28');
+    // 目（打撃時は力んで細める）
+    if(strike){ px(34,37,3,1,C.eye); px(43,37,3,1,C.eye); }
+    else{ px(34,36,3,2,C.eye); px(43,36,3,2,C.eye); }
+    // 大きな鼻
+    px(39,37,4,7,C.skinD); px(39,43,5,2,C.skinD); px(39,44,1,1,'#8a5a30');
+    // 立派な口ひげ
+    px(32,45,17,3,C.hair); px(32,45,17,1,C.hairW);
+    // もじゃもじゃの顎髭（大きく四角め）
+    px(27,48,25,10,C.hair); px(26,51,27,7,C.hair);
+    px(29,49,4,2,C.hairW); px(45,50,4,2,C.hairW);
+    px(31,58,18,5,C.hair); px(34,63,12,3,C.hair); px(37,66,6,2,C.hair);
+    px(48,39,2,3,C.skin);                              // 耳
+    // 汗（力を込める打撃時）
+    if(strike){ px(51,31,1,2,C.sweat); px(52,34,1,1,C.sweat); }
+
+    // ===== 腕＋ハンマー（両手持ち・太腕）=====
+    const grip=[Math.round(50+(fr.h[0]-50)*0.14),55], hx=fr.h[0], hy=fr.h[1];
+    px(43,49,9,6,C.shirt); px(43,54,9,1,C.shirtD);     // まくった袖口
+    pxln(48,52,grip[0],grip[1],7,C.skin);              // 太い前腕
+    pxln(48,51,grip[0],grip[1]-1,2,C.skinHi);          //   力こぶのハイライト
+    px(grip[0]-3,grip[1]-2,7,7,C.skin); px(grip[0]-3,grip[1]-2,7,1,C.skinHi); // こぶし
+    // 柄（木・木目入り）
+    pxln(grip[0],grip[1],hx,hy,4,C.handle); pxln(grip[0],grip[1],hx,hy,1,C.handleD);
+    // ハンマー頭（大きく・金属の立体感）
+    px(hx-7,hy-5,16,11,C.hHead); px(hx-7,hy-5,16,3,C.hHi);
+    px(hx-7,hy+4,16,2,C.hSh); px(hx-7,hy-5,2,11,C.hSh);
+    px(hx-1,hy-5,2,11,C.handleD);                      // くさび穴
+    F.restore();
+    // 火花（打撃時）
+    if(strike){ const n=strike*9;
+      for(let i=0;i<n;i++){ const sx=82+(((Math.random()-.5)*30)|0), sy=64-((Math.random()*24)|0),
+        z=Math.random()<.3?2:1;
+        px(sx,sy,z,z,Math.random()<.5?C.sparkW:C.spark); }
+    }
+  }
+  let forgeTimer=null,ff=0;
+  const forgeSub=$('#forgeSub');
+  function showForge(){ overlay.hidden=false;
+    if(forgeSub) forgeSub.hidden=isPro;   // 無料版にだけPro訴求
+    if(!forgeTimer){ ff=0; drawForge(0);
+      forgeTimer=setInterval(()=>{ ff=(ff+1)%FR.length; drawForge(ff); },140); } }
+  function hideForge(){ if(forgeTimer){clearInterval(forgeTimer);forgeTimer=null;} overlay.hidden=true; }
+
+  // 出力形式の対応チェック（WEBP / AVIF はブラウザにより非対応）
+  (function(){
+    const c=document.createElement('canvas');
+    if(!c.toBlob) return;
+    ['image/webp','image/avif'].forEach(type=>{
+      c.toBlob(b=>{ if(!b || b.type!==type){
+        const opt=fmtSel.querySelector('option[value="'+type+'"]');
+        if(opt){opt.textContent+=t('unsupported'); opt.disabled=true;
+          if(fmtSel.value===type){fmtSel.value='image/png'; syncQuality(); invalidateOutputs();}}
+      }},type);
+    });
+  })();
+
+  applyI18n();       // 端末言語に合わせて全UIを翻訳
+  bootEntitlement(); // 課金状態の確認＋画質欄の初期反映
+})();
+</script>
+</body>
+</html>
