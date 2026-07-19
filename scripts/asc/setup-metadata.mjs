@@ -56,13 +56,14 @@ async function main() {
     const loc = (locs.data || []).find((l) => l.attributes.locale === LOCALE);
     if (!loc) console.log(`  ⚠ ${LOCALE} のローカライズがありません（画面で${LOCALE}を追加してから）`);
     else {
-      await patch(`version localization ${LOCALE}`, `/v1/appStoreVersionLocalizations/${loc.id}`, "appStoreVersionLocalizations", loc.id, {
+      const verBody = {
         description: COPY.description,
         keywords: COPY.keywords,
         promotionalText: COPY.promotionalText,
-        supportUrl: SUPPORT,
-        marketingUrl: MARKETING,
-      });
+      };
+      if (SUPPORT) verBody.supportUrl = SUPPORT;       // 空URLはRFC3986違反で弾かれるので送らない
+      if (MARKETING) verBody.marketingUrl = MARKETING;
+      await patch(`version localization ${LOCALE}`, `/v1/appStoreVersionLocalizations/${loc.id}`, "appStoreVersionLocalizations", loc.id, verBody);
       // whatsNew は初回バージョン(1.0)では編集不可（アップデート時のみ）。失敗しても止めない。
       if (COPY.whatsNew) {
         try {
