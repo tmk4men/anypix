@@ -1,0 +1,21 @@
+{
+  "name": "anypix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AnyPix - on-device image converter & compressor",
+  "scripts": {
+    "build:web": "node scripts/build-web.js",
+    "prep:icon": "node scripts/prep-icon.js",
+    "ios:setup": "node scripts/build-web.js && npx cap add ios && npx @capacitor/assets generate --ios && npx cap sync ios",
+    "ios:sync": "node scripts/build-web.js && npx cap sync ios",
+    "ios:open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/ios": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/assets": "^3.0.5"
+  }
+}

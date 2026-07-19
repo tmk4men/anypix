@@ -1,0 +1,8 @@
+{
+  "appId": "com.anypix.app",
+  "appName": "AnyPix",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always"
+  }
+}

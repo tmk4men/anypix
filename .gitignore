@@ -1,6 +1,13 @@
 # dependencies
 node_modules/
 
+# generated web bundle (built by scripts/build-web.js)
+www/
+
+# Capacitor native project (generated on Mac by `npx cap add ios`)
+ios/
+android/
+
 # Capacitor / native build artifacts (added when packaging for iOS/Android)
 ios/App/Pods/
 ios/App/build/

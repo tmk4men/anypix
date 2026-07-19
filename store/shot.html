@@ -1,0 +1,111 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  @font-face{ font-family:'DotGothic16'; src:url('../lib/fonts/latin-400-normal.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122; }
+  @font-face{ font-family:'DotGothic16'; src:url('../lib/fonts/japanese-400-normal.woff2') format('woff2');
+    unicode-range:U+2010-2027,U+25A0-26FF,U+3000-303F,U+3040-30FF,U+3400-4DBF,U+4E00-9FFF,U+FF00-FFEF,U+AC00-D7A3,U+1100-11FF,U+3130-318F; }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{width:1242px; height:2688px; overflow:hidden}
+  .screen{width:1242px; height:2688px; position:relative; font-family:'DotGothic16',sans-serif;
+    background:
+      radial-gradient(120% 60% at 50% 108%, rgba(224,128,58,.28), rgba(224,128,58,0) 60%),
+      linear-gradient(180deg,#f7ecd8,#eecfa0);
+    -webkit-font-smoothing:none; color:#4b3a28; overflow:hidden}
+  .scan{position:absolute; inset:0; pointer-events:none; mix-blend-mode:multiply;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.04) 0 2px, rgba(0,0,0,0) 2px 6px)}
+  .cap{padding:150px 96px 0; text-align:center}
+  .cap h1{font-size:96px; line-height:1.28; color:#c85f22; white-space:pre-line;
+    text-shadow:5px 5px 0 rgba(120,80,40,.18)}
+  .cap p{margin-top:34px; font-size:44px; line-height:1.5; color:#8a6a44}
+  .stage{position:absolute; left:50%; top:1480px; transform:translate(-50%,-50%); width:1050px}
+  .panel{background:#fffaf1; border:6px solid #b79574; border-radius:44px; box-shadow:16px 16px 0 rgba(120,86,48,.28);
+    padding:70px 56px; min-height:360px; display:flex; flex-direction:column; justify-content:center}
+  .brand{position:absolute; left:0; right:0; bottom:210px; display:flex; align-items:center; justify-content:center; gap:30px}
+  .brand img{width:118px; height:118px; border-radius:26px; box-shadow:6px 6px 0 rgba(120,86,48,.25)}
+  .brand span{font-size:72px; color:#c85f22; text-shadow:4px 4px 0 rgba(120,80,40,.16)}
+  .foot{position:absolute; left:0; right:0; bottom:110px; text-align:center; font-size:38px; color:#9a7c52}
+  .foot b{color:#c85f22}
+  /* パーツ */
+  .row{display:flex; align-items:center; gap:34px}
+  .thumb{width:150px; height:150px; border-radius:20px; border:5px solid #b79574; object-fit:cover; flex:none; image-rendering:pixelated}
+  .meta{flex:1; min-width:0; text-align:left}
+  .fname{font-size:44px; color:#4b3a28}
+  .sub{font-size:36px; color:#9a7c52; margin-top:8px}
+  .delta{color:#2f9e44; font-weight:bold}
+  .pill{display:inline-flex; align-items:center; gap:22px; background:#f6efe3; border:5px solid #b79574;
+    border-radius:24px; padding:22px 34px; font-size:46px; color:#4b3a28}
+  .arrow{color:#e0803a; font-weight:bold}
+  .chips{display:flex; flex-wrap:wrap; gap:26px; justify-content:center}
+  .chip{background:#f2e7d4; border:5px solid #cbb08a; border-radius:22px; padding:24px 34px; font-size:46px; color:#5a462e}
+  .chip.on{background:#e0803a; color:#fff; border-color:#c85f22}
+  .bigpct{font-size:170px; color:#2f9e44; text-align:center; line-height:1; text-shadow:6px 6px 0 rgba(120,80,40,.15)}
+  .track{height:34px; background:#efe4d2; border:5px solid #b79574; border-radius:18px; position:relative; margin:30px 0}
+  .track i{position:absolute; left:0; top:0; bottom:0; width:78%; background:#e0803a; border-radius:12px}
+  .track b{position:absolute; top:-24px; width:78px; height:78px; border-radius:16px; background:#e0803a; border:5px solid #fff; box-shadow:3px 3px 0 rgba(120,80,40,.3)}
+  .ico{width:1em; height:1em; vertical-align:-.14em}
+  .shield{width:300px; height:300px; display:block; margin:0 auto 30px; color:#e0803a}
+  .badges{display:flex; gap:26px; justify-content:center; flex-wrap:wrap; margin-top:20px}
+  .badge{display:inline-flex; align-items:center; gap:16px; background:#eef3ff; border:5px solid #7e93d4; color:#3f4f8a; border-radius:24px; padding:20px 30px; font-size:40px}
+  .badge svg{width:44px;height:44px}
+  .center{text-align:center}
+</style></head>
+<body>
+<div class="screen">
+  <div class="cap"><h1 id="t"></h1><p id="s"></p></div>
+  <div class="stage"><div class="panel" id="art"></div></div>
+  <div class="brand"><img src="../アイコン.png"><span>AnyPix</span></div>
+  <div class="foot" id="foot"></div>
+  <div class="scan"></div>
+</div>
+<script>
+  const P=new URLSearchParams(location.search);
+  const n=parseInt(P.get('n')||'1'), lang=(P.get('lang')||'ja');
+  const CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+  const L={
+    foot:{ja:'すべて端末内で処理・画像は<b>外部送信なし</b>',en:'Runs on-device · images are <b>never uploaded</b>',ko:'모든 처리는 기기 안 · 이미지 <b>외부 전송 없음</b>'},
+    conv:{ja:['写真.png','写真.webp','2.4 MB','780 KB','−68%'],en:['photo.png','photo.webp','2.4 MB','780 KB','−68%'],ko:['사진.png','사진.webp','2.4 MB','780 KB','−68%']}
+  };
+  const S=[
+    {t:{ja:'どんな画像形式も、\n一瞬で変換。',en:'Convert any image\nformat instantly.',ko:'어떤 이미지 형식도\n한 번에 변환.'},
+     s:{ja:'HEIC・JPG・PNG・WEBP・AVIF を相互変換',en:'HEIC, JPG, PNG, WEBP, AVIF and more',ko:'HEIC·JPG·PNG·WEBP·AVIF 상호 변환'}, art:'conv'},
+    {t:{ja:'iPhoneのHEICも\nそのまま読み込み。',en:'Reads iPhone HEIC\nout of the box.',ko:'아이폰 HEIC도\n그대로 불러오기.'},
+     s:{ja:'TIFF・GIF・BMP・AVIF にも対応',en:'Also TIFF, GIF, BMP, AVIF',ko:'TIFF·GIF·BMP·AVIF 지원'}, art:'chips'},
+    {t:{ja:'圧縮でファイルを\nぐっと軽く。',en:'Shrink files with\nsmart compression.',ko:'압축으로 파일을\n가볍게.'},
+     s:{ja:'画質を保ったままサイズダウン',en:'Keep quality, cut the size',ko:'화질은 유지, 용량은 축소'}, art:'compress'},
+    {t:{ja:'すべて端末内で処理。\nだから安心。',en:'All on-device.\nPrivate by design.',ko:'모든 처리는 기기 안에서.\n그래서 안심.'},
+     s:{ja:'画像は外部に送信されません・オフライン動作',en:'Images never leave your device · works offline',ko:'이미지는 외부로 전송되지 않음 · 오프라인 작동'}, art:'privacy'}
+  ];
+  const sc=S[(n-1)%S.length], g=o=>o[lang]||o.ja;
+  document.getElementById('t').textContent=g(sc.t);
+  document.getElementById('s').textContent=g(sc.s);
+  document.getElementById('foot').innerHTML=g(L.foot);
+  const c=g(L.conv);
+  const arts={
+    conv:`
+      <div class="pill center" style="justify-content:center; width:100%; margin-bottom:44px">PNG <span class="arrow">▶</span> WEBP</div>
+      <div class="row">
+        <img class="thumb" src="../アイコン.png">
+        <div class="meta">
+          <div class="fname">${c[0]} <span class="arrow">▶</span> ${c[1]}</div>
+          <div class="sub">${c[2]} <span class="arrow">▶</span> ${c[3]} <span class="delta">${c[4]}</span></div>
+        </div>
+      </div>`,
+    chips:`<div class="chips">
+        ${['HEIC','JPG','PNG','WEBP','GIF','TIFF','BMP','AVIF'].map((f,i)=>`<span class="chip${i===0?' on':''}">${f}</span>`).join('')}
+      </div>`,
+    compress:`
+      <div class="bigpct">−68%</div>
+      <div class="track"><i></i><b style="left:calc(78% - 39px)"></b></div>
+      <div class="row" style="justify-content:center; font-size:48px; color:#5a462e; margin-top:20px">
+        <span>2.4 MB</span><span class="arrow">▶</span><span style="color:#2f9e44">0.8 MB</span>
+      </div>`,
+    privacy:`
+      <svg class="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <div class="badges">
+        <span class="badge">${CHK.replace('width="24"','')}オフライン / Offline</span>
+        <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>非送信 / No upload</span>
+      </div>`
+  };
+  document.getElementById('art').innerHTML=arts[sc.art];
+</script>
+</body></html>
