@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
-# App Store Connect に 課金(anypix_pro/¥300) と 掲載文 を投入する（確認付き）。
-# 前提: ~/.asc/config.json に APIキー、asc.config.json の appId と urls.baseUrl を記入済み。
-# 使い方: bash scripts/asc-setup.sh
+# App Store Connect に 課金(anypix_pro/¥300) と 掲載文 を1発で反映する。
+# appId は自動取得。鍵は ~/.asc/config.json（姿勢アプリと共有）を使用。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-CFG=./asc.config.json
 
-[ -f "$HOME/.asc/config.json" ] || { echo "先に ~/.asc/config.json を用意（App Store Connect API キー）。BUILD-iOS.md 参照"; exit 1; }
-grep -q '"0000000000"' "$CFG" && { echo "先に asc.config.json の appId を実値に（確認: node scripts/asc/asc.mjs apps）"; exit 1; }
-grep -q 'REPLACE-ME' "$CFG" && { echo "先に asc.config.json の urls.baseUrl を公開URLに書き換え"; exit 1; }
+[ -f "$HOME/.asc/config.json" ] || { echo "❌ 鍵がありません: ~/.asc/config.json（姿勢アプリで作った鍵）を確認してください。"; exit 1; }
 
-echo "▶ ドライラン（送信内容の確認だけ・作成しません）"
-node scripts/asc/setup-iap.mjs "$CFG"
-node scripts/asc/setup-metadata.mjs "$CFG"
+echo "▶ AnyPix を検索…"
+APPID=$(node scripts/asc/asc.mjs apps | grep -i anypix | head -1 | cut -f1 | tr -d ' ')
+if ! printf '%s' "${APPID:-}" | grep -qE '^[0-9]+$'; then
+  echo "❌ App Store Connect に AnyPix が見つかりません。登録済みアプリ一覧↓"
+  node scripts/asc/asc.mjs apps || true
+  echo "→ まだなら『新規App』で AnyPix を作成し、もう一度これを実行してください。"
+  exit 1
+fi
+echo "  appId=$APPID"
+
+echo "▶ 課金 anypix_pro を作成…"
+node scripts/asc/setup-iap.mjs ./asc.config.json "$APPID" --yes
+
+echo "▶ 掲載文（説明・キーワード・サブタイトル・審査メモ・カテゴリ）を反映…"
+node scripts/asc/setup-metadata.mjs ./asc.config.json "$APPID" --yes
 
 echo ""
-read -r -p "上の内容で App Store Connect に反映しますか？ (y/N) " a
-[ "$a" = "y" ] || { echo "中止しました。"; exit 0; }
-
-node scripts/asc/setup-iap.mjs "$CFG" --yes
-node scripts/asc/setup-metadata.mjs "$CFG" --yes
-echo "✅ 反映しました。あとは画面でスクショ添付・プライバシーURL確認・提出。"
+echo "✅ 完了。App Store Connect で内容を確認 → スクショ添付 → プライバシーURL入力 → 提出。"
