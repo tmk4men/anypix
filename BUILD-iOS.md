@@ -43,19 +43,23 @@ npm run ios:open            # Xcode で開く
 
 ---
 
-## 残りのコード連携（申請前に要対応）
-本アプリはブラウザ機能で動きますが、iOS(WKWebView) で完全に動かすには次の2点の実装が必要です。
-（依頼あれば実装します）
+## ネイティブ連携（実装済み・実機で要動作確認）
+保存とIAPは `lib/native-bridge.js` に実装済みで、`npm install`（`package.json` に依存を記載）→
+`npm run ios:setup` で自動的に組み込まれます。Web/開発ではブリッジは無効（従来通り）。
 
-1. **保存の iOS 対応** — WKWebView では `<a download>` が効きません。
-   `@capacitor/filesystem` + `@capacitor/share`（または写真保存）へ切替。
-   `index.html` の `download()` を Capacitor 検出時に差し替える形が最小変更です。
+1. **保存（実装済み）** — WKWebView の `<a download>` 不可に対応。
+   `@capacitor/filesystem` に書き出し `@capacitor/share` の共有シートで「画像を保存／ファイルに保存」。
+   キャッシュ経由なので写真ライブラリ権限は不要。アプリ側の保存はネイティブ検出時に自動でこちらを使用。
 
-2. **App内課金(IAP)の結線** — 課金層は実装済みで、`window.AnyPixIAP.{purchase, owned}` を
-   ネイティブから注入するだけです。StoreKit 連携プラグイン（`@capacitor-community/in-app-purchases`
-   や RevenueCat）で以下を実装：
-   - `purchase(productId)`：購入完了で解決／キャンセルで `{cancelled:true}` を投げる
-   - `owned(productId)`：**検証済みの所有権**を返す（購入を試みた=true にしない）
-   ※ この2点を守れば「遅延で失敗誤判定」「キャンセルで誤解放」は既存ロジックが防ぎます。
+2. **App内課金（実装済み）** — `cordova-plugin-purchase`(StoreKit) で `window.AnyPixIAP.{purchase, owned, restore}` を注入。
+   - `owned()`：検証済み所有権を返す ／ `purchase()`：キャンセルは `{cancelled:true}`。
+   - 「遅延で失敗誤判定」「キャンセルで誤解放」は既存の課金層が防止（購入は所有権でのみ解放）。
+   - **Xcode で In-App Purchase Capability を追加**、App Store Connect で製品ID **`anypix_pro`**（非消耗・¥300）を用意。
+   - ※ 別案として RevenueCat(`@revenuecat/purchases-capacitor`) でも可。その場合は `lib/native-bridge.js` の IAP 部を差し替え。
+
+> **要実機確認**: 課金はサンドボックス（Sandbox Apple ID）で購入・復元・キャンセルを必ずテストしてください。
 
 初回リリースは**広告なし**でOK（iOSは広告反映に時間がかかるため、まず買い切りProで出す方針）。
+
+## 変換の実体（補足）
+- 変換・圧縮はすべて端末内（Canvas/WebAssembly）。HEIC=heic2any、TIFF=UTIF+pako、PNG減色=UPNG、いずれも `lib/` に同梱しオフライン動作。

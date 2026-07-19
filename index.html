@@ -492,7 +492,8 @@
   const Store={
     linked(){ return !!(window.AnyPixIAP && window.AnyPixIAP.owned); },
     async owned(){ try{ if(window.AnyPixIAP&&window.AnyPixIAP.owned) return !!(await window.AnyPixIAP.owned(PRODUCT_ID)); }catch(e){} return isPro; },
-    async purchase(){ if(window.AnyPixIAP&&window.AnyPixIAP.purchase) return window.AnyPixIAP.purchase(PRODUCT_ID); throw new Error('IAP未接続'); }
+    async purchase(){ if(window.AnyPixIAP&&window.AnyPixIAP.purchase) return window.AnyPixIAP.purchase(PRODUCT_ID); throw new Error('IAP未接続'); },
+    async restore(){ if(window.AnyPixIAP&&window.AnyPixIAP.restore) return window.AnyPixIAP.restore(); }
   };
 
   function setPending(v){ pending=!!v; v?localStorage.setItem(PENDING_KEY,'1'):localStorage.removeItem(PENDING_KEY); }
@@ -529,6 +530,7 @@
   // 購入復元（Appleの要件。取りこぼし・機種変の救済にもなる）
   async function restorePurchases(){
     if(!Store.linked()){ alert(t('restore_soon')); return false; }
+    try{ await Store.restore(); }catch(e){}      // ストアのレシートを再取得してから
     const ok=await verifyEntitlement();
     alert(ok?t('restore_done'):t('restore_none'));
     return ok;
@@ -548,6 +550,9 @@
   // テスト用（開発のみ）：ネイティブ購入を介さず状態を確認する。
   // ※ これは"所有権"を経由しない開発フックであり、製品UIからは到達しない。
   window.anypixSetPro = v=>{ v?grantPro():revokePro(); return isPro; };
+  // ネイティブIAPブリッジ用：所有権を再確認して反映（store初期化後などに呼ばれる）
+  window.anypixRefreshEntitlement = ()=>verifyEntitlement();
+  window.anypixRestore = ()=>restorePurchases();
 
   function applyProState(){
     proNote.hidden = isPro;
@@ -789,18 +794,26 @@
     document.querySelectorAll('.rm').forEach(b=>b.disabled=on);
   }
 
-  btnDlAll.addEventListener('click',()=>{
-    items.filter(i=>i.outUrl).forEach((i,idx)=>setTimeout(()=>download(i),idx*150));
-  });
+  btnDlAll.addEventListener('click',()=>{ saveItems(items.filter(i=>i.outBlob)); });
 
   btnClear.addEventListener('click',()=>{
     items.forEach(i=>{i.srcUrl&&URL.revokeObjectURL(i.srcUrl);i.outUrl&&URL.revokeObjectURL(i.outUrl);});
     items=[]; render();
   });
 
-  function download(it){
-    const a=document.createElement('a');
-    a.href=it.outUrl; a.download=it.outName; a.click();
+  // 保存：ネイティブ(iOS/Android)では window.AnyPixNativeSave（Filesystem＋共有）、
+  // Web/開発では <a download> にフォールバック。
+  async function saveItems(list){
+    list=(list||[]).filter(i=>i.outBlob);
+    if(!list.length) return;
+    if(window.AnyPixNativeSave){
+      try{ await window.AnyPixNativeSave(list.map(i=>({blob:i.outBlob,name:i.outName}))); }
+      catch(e){ toast(String((e&&e.message)||e)); }
+      return;
+    }
+    list.forEach((it,idx)=>setTimeout(()=>{
+      const a=document.createElement('a'); a.href=it.outUrl||URL.createObjectURL(it.outBlob); a.download=it.outName; a.click();
+    }, idx*150));
   }
 
   // --- render ---
@@ -835,6 +848,8 @@
         it.srcUrl&&URL.revokeObjectURL(it.srcUrl); it.outUrl&&URL.revokeObjectURL(it.outUrl);
         items=items.filter(x=>x!==it); render();
       });
+      const dlEl=li.querySelector('.dl');
+      if(dlEl && window.AnyPixNativeSave) dlEl.addEventListener('click',e=>{ e.preventDefault(); saveItems([it]); });
       listEl.appendChild(li);
     });
     updateButtons();
@@ -1031,5 +1046,7 @@
   bootEntitlement(); // 課金状態の確認＋画質欄の初期反映
 })();
 </script>
+<!-- ネイティブ(iOS/Android)でのみ有効：保存(Filesystem+共有)とIAP結線。Web/開発では何もしない。 -->
+<script src="lib/native-bridge.js"></script>
 </body>
 </html>
