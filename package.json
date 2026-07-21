@@ -8,6 +8,7 @@
     "prep:icon": "node scripts/prep-icon.js",
     "ios:setup": "node scripts/build-web.js && npx cap add ios && node scripts/patch-ios-plist.js && npx @capacitor/assets generate --ios && npx cap sync ios",
     "ios:noencrypt": "node scripts/patch-ios-plist.js",
+    "ios:bump": "node scripts/bump-build.js",
     "ios:sync": "node scripts/build-web.js && npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
