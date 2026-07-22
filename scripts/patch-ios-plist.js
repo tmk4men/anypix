@@ -23,11 +23,29 @@ if (!fs.existsSync(plist)) {
 
 let s = fs.readFileSync(plist, 'utf8');
 
-// 追加するキー（bool と string の両方をサポート）。既存キーはスキップ（冪等）。
+// 3) 広告（AdMob / Google Mobile Ads SDK）用のキー
+//    GADApplicationIdentifier … AdMob の App ID（未設定だと iOS 起動時にクラッシュする）。
+//    NSUserTrackingUsageDescription … ATT（トラッキング許可）ダイアログの説明文。
+//    SKAdNetworkItems … iOS の広告アトリビューション用ネットワークID一覧（Google 他）。
+const SKAN_IDS = [
+  'cstr6suwn9', // Google（必須）
+  'v72qych5uu','ludvb6z3bs','cp8zw746q7','3sh42y64q3','c6k4g5qg8m','s39g8k73mm',
+  '3qy4746246','f38h382jlk','hs6bdukanm','v4nxqhlyqp','wzmmz9fp6w','yclnxrl5pm',
+  't38b2kh725','7ug5zh24hu','9rd848q2bz','n6fk4nfna4','kbd757ywx3','9t245vhmpl',
+  'a2p9lx4jpn','22mmun2rn5','4468km3ulz','2u9pt9hc89','8s468mfl3y','klf5c3l5u5',
+  'ppxm28t8ap','424m5254lk','uw77j35x4d','578prtvx9j','4dzt52r2t5','e5fvkxwrpn',
+  'zq492l623r','3rd42ekr43','3qcr597p9d'
+].map(id => id.indexOf('.') >= 0 ? id : id + '.skadnetwork');
+
+// 追加するキー（bool / string / skadnetwork をサポート）。既存キーはスキップ（冪等）。
 const entries = [
   { key: 'ITSAppUsesNonExemptEncryption', bool: false },
   { key: 'NSCameraUsageDescription',
     value: '撮影した写真をその場で画像形式の変換・圧縮に使うためにカメラを使用します。画像は端末内でのみ処理され、外部には送信されません。' },
+  { key: 'GADApplicationIdentifier', value: 'ca-app-pub-2783540275927131~7520901941' },
+  { key: 'NSUserTrackingUsageDescription',
+    value: '無料版で表示する広告をあなたに合わせて最適化するために使用します。許可しなくてもアプリは通常どおり利用できます。' },
+  { key: 'SKAdNetworkItems', skan: SKAN_IDS },
 ];
 
 const added = [];
@@ -38,9 +56,17 @@ for (const e of entries) {
     console.log('Info.plist の形式が想定外です。手動でキーを追加してください: ' + e.key);
     process.exit(0);
   }
-  const body = ('bool' in e)
-    ? '\t<key>' + e.key + '</key>\n\t<' + (e.bool ? 'true' : 'false') + '/>\n'
-    : '\t<key>' + e.key + '</key>\n\t<string>' + e.value + '</string>\n';
+  let body;
+  if ('bool' in e) {
+    body = '\t<key>' + e.key + '</key>\n\t<' + (e.bool ? 'true' : 'false') + '/>\n';
+  } else if ('skan' in e) {
+    const items = e.skan.map(id =>
+      '\t\t<dict>\n\t\t\t<key>SKAdNetworkIdentifier</key>\n\t\t\t<string>' + id + '</string>\n\t\t</dict>'
+    ).join('\n');
+    body = '\t<key>' + e.key + '</key>\n\t<array>\n' + items + '\n\t</array>\n';
+  } else {
+    body = '\t<key>' + e.key + '</key>\n\t<string>' + e.value + '</string>\n';
+  }
   s = s.slice(0, idx) + body + s.slice(idx);
   added.push(e.key);
 }

@@ -4,8 +4,9 @@
   "locale": "ja",
   "category": "PHOTO_AND_VIDEO",
   "urls": {
-    "baseUrl": "",
-    "contactEmail": "tomokiskriiiabc@gmail.com"
+    "SUPPORT_URL": "https://tmk4men.github.io/anypix/",
+    "PRIVACY_URL": "https://tmk4men.github.io/anypix/privacy.html",
+    "CONTACT_EMAIL": "tomokiskriiiabc@gmail.com"
   },
   "plan": {
     "territory": "JPN",
@@ -15,7 +16,7 @@
       "name": "AnyPix Pro",
       "targetYen": 300,
       "locName": "AnyPix Pro",
-      "locDesc": "透かしの除去、圧縮・画質の調整、複数まとめての一括変換、1日の回数制限の解除がご利用いただけます。買い切り（追加課金なし）です。"
+      "locDesc": "広告の非表示、透かしの除去、圧縮・画質の調整、最短スピードでの変換がご利用いただけます。買い切り（追加課金なし）です。"
     }
   },
   "copy": {
@@ -23,7 +24,7 @@
     "promotionalText": "HEIC・JPG・PNG・WEBP・AVIF・TIFFを相互変換。圧縮でファイルも軽く。すべて端末内で処理し、画像は外部に送信しません。オフライン動作。日本語・English・한국어対応。",
     "keywords": "画像変換,画像形式変換,HEIC変換,heic,jpg,png,webp,avif,tiff,画像圧縮,写真圧縮,ファイル変換,コンバーター",
     "whatsNew": "初回リリースです。HEIC・JPG・PNG・WEBP・AVIF などを端末内で相互変換・圧縮できます。",
-    "reviewNotes": "AnyPix is an on-device image format converter & compressor.\n\nHOW TO TEST\n- The app opens directly to the tool. No login or account is required.\n- Tap the drop area to pick a photo, choose an output format (PNG/JPG/WEBP/AVIF), then tap 'Convert'. Tap 'Save' to export via the share sheet.\n\nIN-APP PURCHASE (one-time, non-consumable)\n- Product ID: anypix_pro (JPY 300).\n- Free tier: 1 image per conversion, a small 'AnyPix' watermark on the output, compression locked to 100%, and a 3-conversions-per-day limit.\n- Tapping 'Get Pro' starts the purchase (please test with a Sandbox account). After purchase, the watermark is removed, compression is unlocked, and batch / unlimited conversions are enabled. Restore is supported.\n\nPRIVACY\n- All image processing is on-device. No user data is collected or transmitted.",
-    "description": "AnyPixは、画像の形式変換と圧縮を、すべて端末内で行うアプリです。写真は外部に送信されません。\n\n■ 特長\n・HEIC・JPG・PNG・WEBP・GIF・TIFF・BMP・AVIF などを読み込み、PNG／JPG／WEBP／AVIF に変換\n・iPhoneのHEIC写真もそのまま変換\n・画質（圧縮率）を選んでファイルサイズを軽量化（PNGは減色による圧縮に対応）\n・複数の画像をまとめて一括変換\n・日本語／English／한국어 に対応、オフラインでも動作\n\n■ プライバシー\n変換・圧縮はすべて端末内で処理し、画像を外部サーバーへ送信しません。\n\n■ 料金\n基本機能は無料。買い切りの「AnyPix Pro」で、透かしの除去・圧縮の調整・複数一括変換・1日の回数制限の解除がご利用いただけます。買い切りは、本アプリが提供される期間中、追加課金なしで対象機能をご利用いただけます。"
+    "reviewNotes": "AnyPix is an on-device image format converter & compressor.\n\nHOW TO TEST\n- The app opens directly to the tool. No login or account is required.\n- Tap the drop area to pick one or more photos, choose an output format (PNG/JPG/WEBP/AVIF), then tap 'Convert'. Tap 'Save' to export via the share sheet.\n\nADS (free tier)\n- Before saving an image, the free tier shows a Google AdMob rewarded video ad; after watching, the image is saved. Purchasing Pro removes all ads.\n- On first launch an App Tracking Transparency (ATT) prompt is shown. The app works whether or not tracking is allowed.\n\nIN-APP PURCHASE (one-time, non-consumable)\n- Product ID: anypix_pro (JPY 300).\n- Free tier: a small 'AnyPix' watermark on the output, compression locked to 100%, slower conversion, and a rewarded ad before saving.\n- Tapping 'Get Pro' starts the purchase (please test with a Sandbox account). After purchase: no ads, the watermark is removed, compression is unlocked, and conversion is fastest. Restore is supported.\n\nPRIVACY\n- All image processing is on-device and images are never uploaded. The free tier uses Google AdMob, which may collect device identifiers for advertising. See our privacy policy.",
+    "description": "AnyPixは、画像の形式変換と圧縮を、すべて端末内で行うアプリです。写真は外部に送信されません。\n\n■ 特長\n・HEIC・JPG・PNG・WEBP・GIF・TIFF・BMP・AVIF などを読み込み、PNG／JPG／WEBP／AVIF に変換\n・iPhoneのHEIC写真もそのまま変換\n・画質（圧縮率）を選んでファイルサイズを軽量化（PNGは減色による圧縮に対応）\n・複数の画像をまとめて一括変換\n・日本語／English／한국어 に対応、オフラインでも動作\n\n■ プライバシー\n変換・圧縮はすべて端末内で処理し、画像を外部サーバーへ送信しません。\n\n■ 料金\n基本機能は無料です（無料版は保存時に動画広告が表示されます）。買い切りの「AnyPix Pro」で、広告の非表示・透かしの除去・圧縮の調整・最短スピードでの変換がご利用いただけます。買い切りは、本アプリが提供される期間中、追加課金なしで対象機能をご利用いただけます。"
   }
 }

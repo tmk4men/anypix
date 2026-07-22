@@ -36,4 +36,9 @@ npx cap open ios
 
 echo ""
 echo "✅ 完了。Xcode で: Team選択 → In-App Purchase capability → Product > Archive → Upload"
+echo "   ※ 再提出はビルド番号を上げる: npm run ios:bump"
+echo "   ── 広告(AdMob) ──"
+echo "   ・実機テスト中は lib/native-bridge.js の AD_TESTING=true（テスト広告）→ 公開前に false に戻す"
+echo "   ・初回起動でATT許可ダイアログが出る。視聴完了→保存/スキップ→保存されない/Pro=広告なし を確認"
+echo "   ・App Store Connect の「App のプライバシー」で第三者広告(Identifiers/Usage Data)を申告"
 echo "   App Store Connect 側は BUILD-iOS.md と scripts/asc/ を参照。"

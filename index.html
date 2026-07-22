@@ -362,7 +362,7 @@
     ja:{
       title:'AnyPix - 画像変換・圧縮コンバータ', tagline:'画像変換・圧縮コンバータ',
       intro:'HEIC・JPG・PNG・WEBP・AVIF などを相互変換。すべて端末内で処理され、画像は外部に送信されません。',
-      s1_t:'素材を持ち込む', s1_free:'変換したい画像を選ぶ（無料は1枚／Proで複数一括）', s1_pro:'変換したい画像を選ぶ（複数まとめてOK）',
+      s1_t:'素材を持ち込む', s1_free:'変換したい画像を選ぶ（複数まとめてOK／保存時に広告）', s1_pro:'変換したい画像を選ぶ（複数まとめてOK）',
       drop_main:'ここに画像をドラッグ＆ドロップ、または <b>クリックして選択</b>',
       drop_formats:'対応: HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF など（GIFは先頭フレーム）',
       s2_t:'仕上げを指定', s2_s:'出力する形式と画質を決める', fmt_label:'変換先の形式',
@@ -386,12 +386,13 @@
       upsell_title:'AnyPix Pro でもっと快適に', upsell_body:'Pro なら制限なく、もっと自由に。',
       limit_title:'本日の無料変換は上限です', limit_body:'無料は1日{0}回まで。Proなら無制限で使えます。',
       b_watermark:'透かしを削除', b_compress:'圧縮・画質を自由に調整', b_batch:'複数をまとめて一括変換',
-      b_fast:'最短スピードで変換', b_unlimited:'1日の回数制限なし', pm_close:'閉じる', price:'¥300'
+      b_fast:'最短スピードで変換', b_unlimited:'1日の回数制限なし', b_noads:'広告なしで使える',
+      ad_needed:'広告を最後まで見ると保存できます', pm_close:'閉じる', price:'¥300'
     },
     en:{
       title:'AnyPix - Image Converter & Compressor', tagline:'Image Converter & Compressor',
       intro:'Convert between HEIC, JPG, PNG, WEBP, AVIF and more. Everything runs on your device — images are never uploaded.',
-      s1_t:'Add your images', s1_free:'Pick images to convert (free: 1 at a time / Pro: batch)', s1_pro:'Pick images to convert (batch supported)',
+      s1_t:'Add your images', s1_free:'Pick images to convert (batch OK / ad on save)', s1_pro:'Pick images to convert (batch supported)',
       drop_main:'Drag & drop images here, or <b>click to select</b>',
       drop_formats:'Supports HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF (GIF: first frame)',
       s2_t:'Choose output', s2_s:'Set the format and quality', fmt_label:'Output format',
@@ -415,12 +416,13 @@
       upsell_title:'Do more with AnyPix Pro', upsell_body:'Go unlimited with Pro.',
       limit_title:'Daily free limit reached', limit_body:'Free is {0} conversions/day. Pro is unlimited.',
       b_watermark:'Remove watermark', b_compress:'Adjust compression & quality', b_batch:'Batch convert multiple images',
-      b_fast:'Fastest conversion', b_unlimited:'No daily limit', pm_close:'Close', price:'$1.99'
+      b_fast:'Fastest conversion', b_unlimited:'No daily limit', b_noads:'No ads',
+      ad_needed:'Watch the ad to the end to save', pm_close:'Close', price:'$1.99'
     },
     ko:{
       title:'AnyPix - 이미지 변환·압축 컨버터', tagline:'이미지 변환·압축 컨버터',
       intro:'HEIC·JPG·PNG·WEBP·AVIF 등을 상호 변환. 모든 처리는 기기 안에서 이루어지며 이미지는 외부로 전송되지 않습니다.',
-      s1_t:'이미지 가져오기', s1_free:'변환할 이미지 선택 (무료는 1장 / Pro는 여러 장)', s1_pro:'변환할 이미지 선택 (여러 장 한꺼번에 OK)',
+      s1_t:'이미지 가져오기', s1_free:'변환할 이미지 선택 (여러 장 OK / 저장 시 광고)', s1_pro:'변환할 이미지 선택 (여러 장 한꺼번에 OK)',
       drop_main:'여기에 이미지를 드래그 앤 드롭하거나 <b>클릭하여 선택</b>',
       drop_formats:'지원: HEIC / JPG / PNG / WEBP / GIF / TIFF / BMP / AVIF 등 (GIF는 첫 프레임)',
       s2_t:'출력 설정', s2_s:'출력 형식과 화질 선택', fmt_label:'변환할 형식',
@@ -444,7 +446,8 @@
       upsell_title:'AnyPix Pro로 더 편리하게', upsell_body:'Pro로 제한 없이 자유롭게.',
       limit_title:'오늘의 무료 변환 한도 도달', limit_body:'무료는 하루 {0}회까지. Pro는 무제한입니다.',
       b_watermark:'워터마크 제거', b_compress:'압축·화질 자유 조정', b_batch:'여러 장 일괄 변환',
-      b_fast:'가장 빠른 변환', b_unlimited:'하루 횟수 제한 없음', pm_close:'닫기', price:'₩3,000'
+      b_fast:'가장 빠른 변환', b_unlimited:'하루 횟수 제한 없음', b_noads:'광고 없이 사용',
+      ad_needed:'광고를 끝까지 보면 저장할 수 있어요', pm_close:'닫기', price:'₩3,000'
     }
   };
   // 端末/ストア言語に追従。?lang=ja|en|ko で上書きも可（テスト用）。
@@ -554,6 +557,29 @@
   window.anypixRefreshEntitlement = ()=>verifyEntitlement();
   window.anypixRestore = ()=>restorePurchases();
 
+  // ===== リワード広告ゲート（無料ユーザーは保存前に動画広告を1回視聴）=====
+  // ネイティブ(iOS)は lib/native-bridge.js が window.AnyPixAds.showRewarded() を実装（AdMob）。
+  //   戻り値: 最後まで視聴=true / スキップ=false / 広告SDK無し・読込失敗=true（＝DLを塞がず素通り）
+  // Web/開発では AnyPixAds が未注入 → 常に素通り（広告なしで保存できる）。Proも常に素通り。
+  const AD_UNLOCK_MS = 90*1000;   // 1回の視聴で90秒は再視聴不要（連続保存への配慮）
+  let adUnlockUntil = 0;
+  const Ads = {
+    available(){ return !!(window.AnyPixAds && window.AnyPixAds.showRewarded); },
+    async showRewarded(){
+      try{ return !!(await window.AnyPixAds.showRewarded()); }catch(e){ return true; }
+    }
+  };
+  // 保存前ゲート。true を返したら保存を続行してよい。
+  async function adGate(){
+    if(isPro) return true;                       // 有料は広告なし
+    if(!Ads.available()) return true;            // Web/開発（広告SDK無し）は素通り
+    if(Date.now() < adUnlockUntil) return true;  // 直近の視聴で解放中
+    const ok = await Ads.showRewarded();
+    if(ok){ adUnlockUntil = Date.now() + AD_UNLOCK_MS; }
+    else { toast(t('ad_needed')); }
+    return ok;
+  }
+
   function applyProState(){
     proNote.hidden = isPro;
     if(proStatus){ proStatus.textContent = isPro?t('pro_pro'):(pending?t('pro_pending'):t('pro_free')); proStatus.classList.toggle('pro',isPro); }
@@ -626,14 +652,9 @@
     return /\.(heic|heif|tif|tiff|png|jpe?g|webp|gif|bmp|ico|avif|svg)$/i.test(f.name);
   }
 
-  const FREE_MAX=1; // 無料版は1回1枚まで（Proで一括変換）
   async function addFiles(fileList){
-    let list=[...fileList].filter(isSupportedInput);
-    if(!isPro){
-      const room=Math.max(0, FREE_MAX-items.length);
-      if(list.length>room){ toast(t('toast_limit')); }
-      list=list.slice(0, room);
-    }
+    // 無料でも複数枚OK（枚数・回数の制限は撤廃。収益はダウンロード時のリワード広告で担保）
+    const list=[...fileList].filter(isSupportedInput);
     const added=[];
     for(const f of list){
       const it={id:++idc,file:f,name:f.name,srcUrl:null,srcBlob:null,
@@ -762,7 +783,6 @@
 
   btnConvert.addEventListener('click',async()=>{
     if(busy||!items.length) return;
-    if(freeReached()){ openProModal('limit'); return; }   // 無料は1日3回まで
     busy=true; lastFmt=fmtSel.value; setLocked(true);
     showForge();                        // 職人が加工中…のドット絵アニメ
     const now=()=>(performance&&performance.now)?performance.now():Date.now();
@@ -782,8 +802,8 @@
     if(el<minMs) await new Promise(r=>setTimeout(r, minMs-el));
     hideForge();
     busy=false; setLocked(false); updateButtons();
-    // 無料版：回数を消費し、変換後にPro訴求モーダル
-    if(!isPro && items.some(i=>i.outBlob)){ bumpUsage(); openProModal('upsell'); }
+    // 無料版：変換後にPro訴求モーダル（保存時は別途リワード広告）
+    if(!isPro && items.some(i=>i.outBlob)) openProModal();
   });
 
   // 変換中はファイル追加・削除・設定変更・保存を止める
@@ -806,6 +826,7 @@
   async function saveItems(list){
     list=(list||[]).filter(i=>i.outBlob);
     if(!list.length) return;
+    if(!await adGate()) return;   // 無料はリワード広告の視聴で保存を解放（Pro/Webは素通り）
     if(window.AnyPixNativeSave){
       try{ await window.AnyPixNativeSave(list.map(i=>({blob:i.outBlob,name:i.outName}))); }
       catch(e){ toast(String((e&&e.message)||e)); }
@@ -888,21 +909,14 @@
     clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
   }
 
-  // ===== 1日の無料変換回数（無料は3回/日）＋ Pro訴求モーダル =====
-  const FREE_DAILY=3;
-  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-  function getUsage(){ try{ const u=JSON.parse(localStorage.getItem('anypix_usage')||'{}'); return (u&&u.date===todayStr())?u:{date:todayStr(),count:0}; }catch(e){ return {date:todayStr(),count:0}; } }
-  function usedToday(){ return getUsage().count; }
-  function bumpUsage(){ const u=getUsage(); u.count++; localStorage.setItem('anypix_usage', JSON.stringify(u)); return u.count; }
-  function freeReached(){ return !isPro && usedToday()>=FREE_DAILY; }
-
+  // ===== Pro訴求モーダル =====
   const proModal=$('#proModal'), pmTitle=$('#pmTitle'), pmBody=$('#pmBody'), pmList=$('#pmList'), pmBuy=$('#pmBuy'), pmClose=$('#pmClose');
   const CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
-  function openProModal(mode){
+  function openProModal(){
     if(isPro) return;
-    pmTitle.textContent = t(mode==='limit'?'limit_title':'upsell_title');
-    pmBody.textContent  = mode==='limit'? t('limit_body', FREE_DAILY) : t('upsell_body');
-    pmList.innerHTML = ['b_watermark','b_compress','b_batch','b_fast','b_unlimited']
+    pmTitle.textContent = t('upsell_title');
+    pmBody.textContent  = t('upsell_body');
+    pmList.innerHTML = ['b_noads','b_watermark','b_compress','b_fast']
       .map(k=>'<li>'+CHK+'<span>'+t(k)+'</span></li>').join('');
     pmBuy.textContent  = t('buyPro')+' '+t('price');
     pmClose.textContent= t('pm_close');
