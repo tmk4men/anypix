@@ -43,14 +43,30 @@ const entries = [
   { key: 'NSCameraUsageDescription',
     value: '撮影した写真をその場で画像形式の変換・圧縮に使うためにカメラを使用します。画像は端末内でのみ処理され、外部には送信されません。' },
   { key: 'GADApplicationIdentifier', value: 'ca-app-pub-2783540275927131~7520901941' },
+  // ATT の説明文は審査官（英語）にも読める必要があるため英日併記にする。
+  // ※ 本来は en/ja/ko の InfoPlist.strings で多言語化するのが正式。
   { key: 'NSUserTrackingUsageDescription',
-    value: '無料版で表示する広告をあなたに合わせて最適化するために使用します。許可しなくてもアプリは通常どおり利用できます。' },
+    value: '無料版で表示する広告をあなたに合わせて最適化するために使用します。許可しなくてもアプリは通常どおり利用できます。 / '
+         + 'Used to personalize the ads shown in the free version. All features work whether or not you allow tracking.' },
   { key: 'SKAdNetworkItems', skan: SKAN_IDS },
 ];
 
-const added = [];
+const added = [], updated = [];
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); // XML特殊文字
 for (const e of entries) {
-  if (new RegExp('<key>\\s*' + e.key + '\\s*</key>').test(s)) continue; // 既存はスキップ
+  if (new RegExp('<key>\\s*' + e.key + '\\s*</key>').test(s)) {
+    // 既存キー：文字列値のみ、内容が変わっていれば上書きする（説明文の修正を反映するため）。
+    // bool / SKAdNetworkItems は一度書けば変わらないのでそのまま残す。
+    if ('value' in e) {
+      const re = new RegExp('(<key>\\s*' + e.key + '\\s*</key>\\s*<string>)([\\s\\S]*?)(</string>)');
+      const m = s.match(re);
+      if (m && m[2] !== esc(e.value)) {
+        s = s.replace(re, '$1' + esc(e.value).replace(/\$/g, '$$$$') + '$3');
+        updated.push(e.key);
+      }
+    }
+    continue;
+  }
   const idx = s.lastIndexOf('</dict>');
   if (idx < 0) {
     console.log('Info.plist の形式が想定外です。手動でキーを追加してください: ' + e.key);
@@ -65,15 +81,16 @@ for (const e of entries) {
     ).join('\n');
     body = '\t<key>' + e.key + '</key>\n\t<array>\n' + items + '\n\t</array>\n';
   } else {
-    body = '\t<key>' + e.key + '</key>\n\t<string>' + e.value + '</string>\n';
+    body = '\t<key>' + e.key + '</key>\n\t<string>' + esc(e.value) + '</string>\n';
   }
   s = s.slice(0, idx) + body + s.slice(idx);
   added.push(e.key);
 }
 
-if (added.length === 0) {
+if (added.length === 0 && updated.length === 0) {
   console.log('必要なキーは既に設定済みです。');
   process.exit(0);
 }
 fs.writeFileSync(plist, s);
-console.log('✅ Info.plist に追加: ' + added.join(', '));
+if (added.length)   console.log('✅ Info.plist に追加: ' + added.join(', '));
+if (updated.length) console.log('✅ Info.plist の値を更新: ' + updated.join(', '));
